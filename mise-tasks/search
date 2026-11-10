@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#MISE description="Resumable search: mise run search [DEPTH] [ANY] [extra flags]. Output goes to runs/d<DEPTH>a<ANY>."
+#MISE depends=["build"]
+# Re-running the same command continues from the checkpoint in the output directory.
+# Extra flags are passed through, e.g.: mise run search 3 0 --min-group 60
+set -euo pipefail
+depth="${1:-2}"
+any="${2:-0}"
+if [ "$#" -ge 2 ]; then shift 2; else shift "$#"; fi
+name="d${depth}a${any}"
+# flags that change what is searched become part of the directory name
+prev=""
+for a in "$@"; do
+  case "$prev" in
+    --min-group) name="${name}-g${a}" ;;
+    --near) name="${name}-near${a}" ;;
+    --only|--seeds|--seed-range) name="${name}-$(printf '%s' "$a" | cksum | cut -d' ' -f1)" ;;
+  esac
+  prev="$a"
+done
+out="runs/${name}"
+echo "output: ${out}  (log: ${out}/run.log)" >&2
+WATCH=1 exec target/release/webb-toroids --depth "$depth" --any "$any" --out "$out" --resume "$@"

@@ -26,7 +26,18 @@ The Python scripts need Python 3 with `numpy` and `scipy`.
 
 ## Run
 
-    target/release/webb-toroids --depth 1 --any 0 --threads 16 --out runs/t1
+The resumable way, as a mise task:
+
+    mise run search 2 0                  # depth 2, no arbitrary links -> runs/d2a0
+    mise run search 3 0 --min-group 60   # extra flags pass through   -> runs/d3a0-g60
+
+The task builds first, names the output directory from its arguments, uses every CPU, and
+resumes: stop it with Ctrl-C and run the same command again to continue. Progress goes to the
+terminal and to `run.log` in the output directory.
+
+Directly:
+
+    target/release/webb-toroids --depth 1 --any 0 --out runs/t1
 
 | flag | meaning | default |
 | --- | --- | --- |
@@ -37,12 +48,17 @@ The Python scripts need Python 3 with `numpy` and `scipy`.
 | `--only a,b,c` | restrict the library to these solids (names as in `solids.txt`) | all |
 | `--seeds a,b,c` | restrict which solids may be the seed | all |
 | `--seed-range A:B` | run seeds A to B-1 only, to split a run | all |
-| `--threads T` | worker threads | 4 |
+| `--threads T` | worker threads | all CPUs |
+| `--resume` | continue from `checkpoint.txt` in the output directory if there is one; refuses if the settings differ | off |
 | `--out DIR` | output directory | `out` |
 
 Output: `results.tsv` (one row per distinct toroid), `results.jsonl` (representative pieces and
-group generators) and `off/NNNNNN.off` with a `.pieces` file naming the solid behind each face.
-Progress and reject counts go to stderr.
+group generators), `off/NNNNNN.off` with a `.pieces` file naming the solid behind each face,
+`run.log` (progress and reject counts, also on stderr) and `checkpoint.txt` (settings, completed
+seeds and result signatures). Without `--resume` an existing output directory is overwritten.
+A seed interrupted part-way is redone on resume; its results are not duplicated. After a resume
+the reject counts on the `done` line cover the last session only. `WATCH=1` prints live counters
+every 10 s.
 
 Check a result independently (scipy convex hull):
 
