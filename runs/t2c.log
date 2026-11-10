@@ -1,0 +1,35 @@
+through links [0, 0, 0, 40, 16, 11, 7, 0, 3, 0, 6]
+solids 127 seeds 297 axtab [0, 0, 0, 276, 150, 119, 25, 0, 11, 0, 26] links [0, 0, 0, 1216, 432, 491, 73, 0, 27, 0, 86]
+seed 0/297 0s
+seed 10/297 0s
+seed 20/297 1s
+seed 30/297 1s
+seed 40/297 1s
+seed 50/297 2s
+seed 60/297 2s
+seed 70/297 2s
+seed 80/297 2s
+seed 90/297 4s
+seed 100/297 5s
+seed 110/297 5s
+seed 120/297 6s
+seed 130/297 8s
+seed 140/297 8s
+seed 150/297 8s
+seed 160/297 9s
+seed 170/297 9s
+seed 180/297 10s
+seed 200/297 11s
+seed 190/297 11s
+seed 210/297 11s
+seed 220/297 12s
+seed 230/297 12s
+seed 240/297 12s
+seed 250/297 13s
+seed 260/297 13s
+seed 270/297 14s
+seed 280/297 14s
+seed 290/297 14s
+sat 0 improper 0
+stage ms: group 113 collide 6842 mesh 14006 AQ 4409
+done 14.2s tests 70321837 hits 2818981 unique 20 reasons {"contact": 140, "q-prescreen": 179265, "overlap": 92544, "overlap-quick": 2274568, "overlap-centre": 51, "valid": 18029, "nonmanifold": 10200, "pinch": 133, "disconnected": 5, "RAQT": 41, "overlap-sphere": 244046}

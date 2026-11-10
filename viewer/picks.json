@@ -1,0 +1,100 @@
+[
+ {
+  "run": "runs/webb4",
+  "id": 2,
+  "grp": "Icosahedral",
+  "name": "Webb's toroid, undrilled",
+  "note": "The search's rediscovery of Robert Webb's toroid: 12 pentagonal rotundas on the 5-fold axes, 20 tridiminished icosahedra on the 3-fold axes, each pair joined by a pentagonal antiprism and prism. The 30 dodecagonal hull faces are equilateral but not regular. Webb also drills the 12 rotundas, which this search does not do, taking genus from 29 to 41."
+ },
+ {
+  "run": "runs/webb4",
+  "id": 0,
+  "grp": "Icosahedral",
+  "name": "Antiprism-only shell",
+  "note": "The same nodes joined by a single pentagonal antiprism. The hull windows shrink from dodecagons to irregular octagons and the shell is 4.6 edges in radius instead of 6.2. Probably one of Webb's listed icosahedral variants; I could not confirm that."
+ },
+ {
+  "run": "runs/webb4",
+  "id": 1,
+  "grp": "Icosahedral",
+  "name": "Antiprism shell, doubled nodes",
+  "note": "As above with a second tridiminished icosahedron stacked inward on each 3-fold node. Same hull."
+ },
+ {
+  "run": "runs/t1",
+  "id": 0,
+  "grp": "Icosahedral",
+  "name": "Antiprism shell, capped nodes",
+  "note": "The 3-fold nodes are augmented tridiminished icosahedra (J64), the cap pointing inward. Same hull as the antiprism-only shell."
+ },
+ {
+  "run": "runs/t2",
+  "id": 3,
+  "grp": "Icosahedral",
+  "name": "Webb's toroid, capped nodes",
+  "note": "Webb's arrangement with J64 in place of J63 on the 3-fold axes."
+ },
+ {
+  "run": "runs/t1",
+  "id": 17,
+  "grp": "Octahedral",
+  "name": "Pyramid, prism, tetrahedron",
+  "note": "6 square pyramids on the 4-fold axes and 8 tetrahedra on the 3-fold axes, joined by 24 triangular prisms. The roundest octahedral result: the hull is 8 triangles, 30 squares and 12 rhombi."
+ },
+ {
+  "run": "runs/t1",
+  "id": 12,
+  "grp": "Octahedral",
+  "name": "Two cupolas and prisms",
+  "note": "6 square cupolas and 8 triangular cupolas joined by 24 triangular prisms. Hull has 12 irregular octagons."
+ },
+ {
+  "run": "runs/t1",
+  "id": 11,
+  "grp": "Octahedral",
+  "name": "Cupola, prism, tetrahedron",
+  "note": "6 square cupolas and 8 tetrahedra joined by 24 triangular prisms."
+ },
+ {
+  "run": "runs/t1",
+  "id": 18,
+  "grp": "Octahedral",
+  "name": "Pyramid, prism, cupola",
+  "note": "6 square pyramids and 8 triangular cupolas joined by 24 triangular prisms. Hull is 30 squares and 20 hexagons, 12 of the hexagons irregular."
+ },
+ {
+  "run": "runs/t2c",
+  "id": 6,
+  "grp": "Octahedral",
+  "name": "Octahedra, prisms, cupolas",
+  "note": "32 octahedra, 24 triangular prisms and 6 square cupolas. Hull has 12 irregular dodecagons, the octahedral counterpart of the windows in Webb's toroid."
+ },
+ {
+  "run": "runs/t2c",
+  "id": 7,
+  "grp": "Octahedral",
+  "name": "Octahedra, prisms, pyramids",
+  "note": "32 octahedra, 24 triangular prisms and 6 square pyramids. Hull has 12 irregular decagons."
+ },
+ {
+  "run": "runs/t1",
+  "id": 2,
+  "grp": "Octahedral",
+  "name": "Octahedra and pyramids",
+  "note": "32 octahedra and 6 square pyramids. Hull has 12 irregular hexagons."
+ },
+ {
+  "run": "runs/t1",
+  "id": 1,
+  "grp": "Octahedral",
+  "name": "Octahedra and cupolas",
+  "note": "32 octahedra and 6 square cupolas. Hull has 12 irregular octagons."
+ },
+ {
+  "run": "runs/t1",
+  "id": 4,
+  "grp": "Regular hull, for comparison",
+  "name": "Stewart's cupola shell",
+  "note": "6 square cupolas and 8 triangular cupolas inside a truncated cuboctahedron hull. A classic from Stewart's book, here because the search finds it too: every hull face is regular, so it is not Webb-style."
+ }
+]

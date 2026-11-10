@@ -1,0 +1,156 @@
+<title>Webb-style Toroids</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* layout: model list on the left, one large turntable view, a facts strip under it */
+:root {
+  --bg: #f3f5f7; --panel: #ffffff; --fg: #17212b; --muted: #5d6b79; --line: #d5dbe1; --accent: #0b6e8a; --accent-fg: #ffffff; --stage: #e6eaee;
+  --display: "Space Grotesk", "Segoe UI", sans-serif; --body: "Inter", "Segoe UI", sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #10161c; --panel: #18212a; --fg: #e4eaef; --muted: #93a1ae; --line: #2b3742; --accent: #4fb6d3; --accent-fg: #06222b; --stage: #0b1015; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #10161c; --panel: #18212a; --fg: #e4eaef; --muted: #93a1ae; --line: #2b3742; --accent: #4fb6d3; --accent-fg: #06222b; --stage: #0b1015; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px; }
+h1 { font-family: var(--display); font-size: 22px; font-weight: 600; margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); max-width: 70ch; margin: 4px 0 0; }
+.wrap { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 16px; margin-top: 16px; align-items: start; }
+@media (max-width: 760px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+.list { display: flex; flex-direction: column; gap: 4px; max-height: 78vh; overflow-y: auto; }
+@media (max-width: 760px) { .list { max-height: 34vh; } }
+.item { text-align: left; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; cursor: pointer; font: inherit; }
+.item:hover { border-color: var(--accent); }
+.item:focus-visible, .seg button:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.item[aria-current="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.item b { font-family: var(--display); font-weight: 600; display: block; }
+.item span { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.grp { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 2px; }
+.main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.stage { position: relative; background: var(--stage); border: 1px solid var(--line); border-radius: 8px; aspect-ratio: 4 / 3; max-width: 100%; max-height: 72vh; width: 100%; overflow: hidden; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.bar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { font: inherit; background: var(--panel); color: var(--fg); border: 0; padding: 6px 10px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+label { display: inline-flex; gap: 6px; align-items: center; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px 16px; margin: 0; }
+.facts div { min-width: 0; }
+.facts dt { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; font-family: var(--display); font-size: 16px; }
+.note { max-width: 70ch; margin: 0; }
+.recipe { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; margin: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+</style>
+<h1>Webb-style Toroids</h1>
+<p class="lede">Regular-faced, quasi-convex toroids with octahedral or icosahedral symmetry, found by a chain search over all 127 convex regular-faced solids. Drag to turn, scroll or pinch to zoom.</p>
+<div class="wrap">
+  <nav class="list" id="list" aria-label="Models"></nav>
+  <section class="main">
+    <div class="stage"><canvas id="cv"></canvas></div>
+    <div class="bar">
+      <div class="seg" role="group" aria-label="Colour by">
+        <button id="m-piece" aria-pressed="true">Colour by piece</button><button id="m-shape" aria-pressed="false">by face shape</button>
+      </div>
+      <label><input type="checkbox" id="hull"> Show convex hull</label>
+      <label><input type="checkbox" id="spin" checked> Turn slowly</label>
+    </div>
+    <div class="legend" id="legend"></div>
+    <dl class="facts" id="facts"></dl>
+    <p class="note" id="note"></p>
+    <p class="recipe" id="recipe"></p>
+  </section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const MODELS = /*DATA*/[];
+const PAL = ["#3b82b8", "#e0a030", "#4f9d69", "#c2577a", "#7e6bc4", "#d9703a", "#3aa7a3", "#8a8f3c", "#b0553f", "#5c7fd0"];
+const SHAPE = {3: "#e9c46a", 4: "#5aa9c9", 5: "#d1603d", 6: "#6a994e", 8: "#8d6cab", 10: "#c94f7c"};
+const cv = document.getElementById("cv");
+const renderer = new THREE.WebGLRenderer({canvas: cv, antialias: true, alpha: true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(32, 4 / 3, 0.1, 500);
+const ctl = new THREE.OrbitControls(cam, cv);
+ctl.enablePan = false; ctl.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x556070, 0.75));
+const key = new THREE.DirectionalLight(0xffffff, 0.65); scene.add(key);
+const group = new THREE.Group(); scene.add(group);
+let cur = 0, mode = "piece", meshObj = null, hullObj = null;
+function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function build() {
+  const m = MODELS[cur];
+  while (group.children.length) { const c = group.children.pop(); c.geometry.dispose(); }
+  const pos = [], col = [], c = new THREE.Color();
+  m.f.forEach((f, i) => {
+    c.set(mode === "piece" ? PAL[m.p[i] % PAL.length] : (SHAPE[f.length] || "#888888"));
+    for (let k = 1; k + 1 < f.length; k++) for (const j of [f[0], f[k], f[k + 1]]) { pos.push(m.v[3 * j], m.v[3 * j + 1], m.v[3 * j + 2]); col.push(c.r, c.g, c.b); }
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  meshObj = new THREE.Mesh(g, new THREE.MeshLambertMaterial({vertexColors: true, side: THREE.DoubleSide}));
+  group.add(meshObj);
+  const ep = [], seen = new Set();
+  m.f.forEach(f => f.forEach((a, k) => { const b = f[(k + 1) % f.length], id = a < b ? a + "_" + b : b + "_" + a; if (!seen.has(id)) { seen.add(id); ep.push(m.v[3*a], m.v[3*a+1], m.v[3*a+2], m.v[3*b], m.v[3*b+1], m.v[3*b+2]); } }));
+  const eg = new THREE.BufferGeometry(); eg.setAttribute("position", new THREE.Float32BufferAttribute(ep, 3));
+  group.add(new THREE.LineSegments(eg, new THREE.LineBasicMaterial({color: 0x10161c, transparent: true, opacity: 0.45})));
+  const hp = [], hc = [], hl = [];
+  m.h.forEach(h => {
+    c.set(h.r ? "#9aa7b3" : "#f2b632");
+    const q = h.i.map(j => [m.v[3*j] * 1.002, m.v[3*j+1] * 1.002, m.v[3*j+2] * 1.002]);
+    for (let k = 1; k + 1 < q.length; k++) for (const p of [q[0], q[k], q[k + 1]]) { hp.push(...p); hc.push(c.r, c.g, c.b); }
+    q.forEach((p, k) => hl.push(...p, ...q[(k + 1) % q.length]));
+  });
+  const hg = new THREE.BufferGeometry();
+  hg.setAttribute("position", new THREE.Float32BufferAttribute(hp, 3)); hg.setAttribute("color", new THREE.Float32BufferAttribute(hc, 3));
+  hullObj = new THREE.Group();
+  hullObj.add(new THREE.Mesh(hg, new THREE.MeshBasicMaterial({vertexColors: true, transparent: true, opacity: 0.38, side: THREE.DoubleSide, depthWrite: false})));
+  const lg = new THREE.BufferGeometry(); lg.setAttribute("position", new THREE.Float32BufferAttribute(hl, 3));
+  hullObj.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({color: 0xf2b632})));
+  hullObj.children.forEach(o => group.add(o));
+  setHull();
+  const leg = document.getElementById("legend"); leg.textContent = "";
+  const add = (colr, text) => { const s = document.createElement("span"); const i = document.createElement("i"); i.style.background = colr; s.append(i, text); leg.append(s); };
+  if (mode === "piece") m.pieces.forEach((n, i) => add(PAL[i % PAL.length], m.counts[i] + " × " + n));
+  else [...new Set(m.f.map(f => f.length))].sort((a, b) => a - b).forEach(n => add(SHAPE[n] || "#888888", n + "-gon"));
+  if (document.getElementById("hull").checked) { add("#f2b632", "irregular hull face"); add("#9aa7b3", "regular hull face"); }
+}
+function setHull() { const on = document.getElementById("hull").checked; group.children.slice(2).forEach(o => o.visible = on); }
+function show(i, keepView) {
+  cur = i; const m = MODELS[i];
+  build();
+  if (!keepView) { cam.position.set(0, m.R * 0.9, m.R * 4.4); ctl.target.set(0, 0, 0); ctl.update(); }
+  document.querySelectorAll(".item").forEach((b, k) => b.setAttribute("aria-current", k === i ? "true" : "false"));
+  const facts = [["Genus", m.genus], ["Symmetry", m.sym], ["Pieces", m.npieces], ["Faces", m.F], ["Hull faces", m.hull], ["Roundness", m.round], ["Diameter", m.diam + " edges"], ["Class", m.cls]];
+  const dl = document.getElementById("facts"); dl.textContent = "";
+  facts.forEach(([k, v]) => { const d = document.createElement("div"), dt = document.createElement("dt"), dd = document.createElement("dd"); dt.textContent = k; dd.textContent = v; d.append(dt, dd); dl.append(d); });
+  document.getElementById("note").textContent = m.note;
+  document.getElementById("recipe").textContent = m.chain;
+}
+const list = document.getElementById("list");
+let lastGrp = null;
+MODELS.forEach((m, i) => {
+  if (m.grp !== lastGrp) { const g = document.createElement("div"); g.className = "grp"; g.textContent = m.grp; list.append(g); lastGrp = m.grp; }
+  const b = document.createElement("button"); b.className = "item"; b.id = "model-" + i;
+  const t = document.createElement("b"); t.textContent = m.name;
+  const s = document.createElement("span"); s.textContent = "genus " + m.genus + " · " + m.sym + " · " + m.npieces + " pieces";
+  b.append(t, s); b.onclick = () => show(i); list.append(b);
+});
+for (const [id, md] of [["m-piece", "piece"], ["m-shape", "shape"]]) document.getElementById(id).onclick = () => {
+  mode = md; document.getElementById("m-piece").setAttribute("aria-pressed", md === "piece"); document.getElementById("m-shape").setAttribute("aria-pressed", md === "shape"); show(cur, true);
+};
+document.getElementById("hull").onchange = () => show(cur, true);
+function size() { const r = cv.parentElement.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / r.height; cam.updateProjectionMatrix(); }
+new ResizeObserver(size).observe(cv.parentElement); size();
+const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (still) document.getElementById("spin").checked = false;
+function tick() {
+  if (document.getElementById("spin").checked) group.rotation.y += 0.003;
+  key.position.copy(cam.position);
+  ctl.update(); renderer.render(scene, cam); requestAnimationFrame(tick);
+}
+if (MODELS.length) show(0);
+tick();
+</script>
