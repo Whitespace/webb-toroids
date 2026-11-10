@@ -17,6 +17,13 @@ static G_R: [AtomicU64; 12] = [const { AtomicU64::new(0) }; 12];
 static G_RNS: [AtomicU64; 12] = [const { AtomicU64::new(0) }; 12];
 static G_DONE: AtomicU64 = AtomicU64::new(0);
 
+static LOG: Mutex<Option<std::fs::File>> = Mutex::new(None);
+/// Progress line to stderr and, once the output directory is open, to OUT/run.log.
+fn say(msg: String) {
+    eprintln!("{}", msg);
+    if let Some(f) = LOG.lock().unwrap().as_mut() { let _ = writeln!(f, "{}", msg); }
+}
+
 const FLIP: M3 = [[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]];
 
 struct AxEntry { solid: usize, face: usize, k: usize, order: usize, xp: Xf, p: V3, w: V3 }
@@ -80,6 +87,7 @@ struct Shared {
     seen: HashSet<String>,
     tsv: std::fs::File,
     jsonl: std::fs::File,
+    ckpt: std::fs::File,
     n: usize,
     reasons: std::collections::HashMap<&'static str, u64>,
 }
@@ -144,9 +152,10 @@ fn record(ctx: &mut Ctx, reps: &[(usize, Xf)], gens: &[Xf], centre: V3, res: Res
     let (mut m1, mut m3) = (0.0, 0.0);
     for p in &r.pts { let d = dist(*p, centre); m1 += d; m3 += d * d * d; }
     let sig = format!("{} {} {} {} {} {} {} {:.4} {:.3} {:.2} {}", r.gorder, r.genus, r.nv, r.ne, r.nf, r.a_viol, r.q_missing, r.rcirc, m1, m3, names.join("+"));
-    if !sh.seen.insert(sig) { return; }
+    if !sh.seen.insert(sig.clone()) { return; }
     let id = sh.n;
     sh.n += 1;
+
     let hf: Vec<String> = r.hull_faces.iter().map(|n| n.to_string()).collect();
     writeln!(sh.tsv, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\t{}\t{}\t{}\t{}",
         id, if good { "RAQT" } else { "-" }, r.gorder, r.genus, r.npieces, r.a_viol, r.q_missing, r.q_edges,
@@ -156,7 +165,9 @@ fn record(ctx: &mut Ctx, reps: &[(usize, Xf)], gens: &[Xf], centre: V3, res: Res
     let gj: Vec<String> = gens.iter().map(xf_json).collect();
     writeln!(sh.jsonl, "{{\"id\":{},\"good\":{},\"group\":{},\"genus\":{},\"centre\":[{:.15e},{:.15e},{:.15e}],\"reps\":[{}],\"gens\":[{}]}}",
         id, good, r.gorder, r.genus, centre[0], centre[1], centre[2], rj.join(","), gj.join(",")).unwrap();
-    if true { write_off(&format!("{}/off/{:06}.off", ctx.outdir, id), &r, ctx.lib); }
+    write_off(&format!("{}/off/{:06}.off", ctx.outdir, id), &r, ctx.lib);
+    // last, so a result is only treated as known on resume once all its files exist
+    writeln!(sh.ckpt, "sig {}\t{}", id, sig).unwrap();
 }
 
 fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
@@ -241,7 +252,9 @@ fn dfs(ctx: &mut Ctx, w: &Xf, n: usize, depth: usize, any_left: usize, pieces: &
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let mut solids_path = "solids.txt".to_string();
-    let (mut depth, mut any, mut threads) = (2usize, 1usize, 4usize);
+    let (mut depth, mut any) = (2usize, 1usize);
+    let mut threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    let mut resume = false;
     let (mut minorder, mut near) = (24usize, 0usize);
     let mut range: Option<(usize, usize)> = None;
     let mut outdir = "out".to_string();
@@ -257,6 +270,7 @@ fn main() {
             "--min-group" => { minorder = args[i + 1].parse().unwrap(); i += 1; }
             "--near" => { near = args[i + 1].parse().unwrap(); i += 1; }
             "--seed-range" => { let v: Vec<usize> = args[i + 1].split(':').map(|x| x.parse().unwrap()).collect(); range = Some((v[0], v[1])); i += 1; }
+            "--resume" => { resume = true; }
             "--out" => { outdir = args[i + 1].clone(); i += 1; }
             "--only" => { only = Some(args[i + 1].split(',').map(|s| s.to_string()).collect()); i += 1; }
             "--seeds" => { seeds_only = Some(args[i + 1].split(',').map(|s| s.to_string()).collect()); i += 1; }
@@ -267,10 +281,6 @@ fn main() {
     let lib = solids::load(&solids_path);
     let active: Vec<bool> = lib.iter().map(|s| only.as_ref().map_or(true, |o| o.contains(&s.name))).collect();
     let tab = build_tables(&lib, &active);
-    std::fs::create_dir_all(format!("{}/off", outdir)).unwrap();
-    let mut tsv = std::fs::File::create(format!("{}/results.tsv", outdir)).unwrap();
-    writeln!(tsv, "id\tclass\tgroup\tgenus\tpieces\tA_viol\tQ_missing\tQ_edges\thull\trin\trcirc\troundness\thull_faces\tV\tE\tF\tcontent\tchain").unwrap();
-    let shared = Mutex::new(Shared { seen: HashSet::new(), tsv, jsonl: std::fs::File::create(format!("{}/results.jsonl", outdir)).unwrap(), n: 0, reasons: Default::default() });
     // seeds: (solid, axis, face rep under the axis stabiliser)
     let mut seeds: Vec<(usize, usize, usize)> = Vec::new();
     for (si, s) in lib.iter().enumerate() {
@@ -285,26 +295,66 @@ fn main() {
         }
     }
     if let Some((a, b)) = range { seeds = seeds[a.min(seeds.len())..b.min(seeds.len())].to_vec(); }
-    eprintln!("through links {:?}", tab.thru.iter().map(|v| v.len()).collect::<Vec<_>>());
-    eprintln!("solids {} seeds {} axtab {:?} links {:?}", lib.len(), seeds.len(),
-        tab.ax.iter().map(|v| v.len()).collect::<Vec<_>>(), tab.links.iter().map(|v| v.len()).collect::<Vec<_>>());
+    // Output directory and checkpoint. checkpoint.txt holds the run's settings, every result's
+    // dedupe signature and every completed seed, so --resume can skip finished seeds and append.
+    std::fs::create_dir_all(format!("{}/off", outdir)).unwrap();
+    let config = format!("config depth={} any={} min-group={} near={} only={} seeds={} range={:?} nseeds={}", depth, any, minorder, near,
+        only.as_ref().map_or("all".to_string(), |v| v.join(",")), seeds_only.as_ref().map_or("all".to_string(), |v| v.join(",")), range, seeds.len());
+    let ckpath = format!("{}/checkpoint.txt", outdir);
+    let mut done = vec![false; seeds.len()];
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut nres = 0usize;
+    let resuming = resume && std::path::Path::new(&ckpath).exists();
+    if resuming {
+        let txt = std::fs::read_to_string(&ckpath).unwrap();
+        let mut lines = txt.lines();
+        let old = lines.next().unwrap_or("");
+        if old != config {
+            eprintln!("--resume: {} was made with different settings\n  there: {}\n  now:   {}", outdir, old, config);
+            std::process::exit(2);
+        }
+        for l in lines {
+            if let Some(x) = l.strip_prefix("seed ") { if let Ok(i) = x.parse::<usize>() { if i < done.len() { done[i] = true; } } }
+            else if let Some(x) = l.strip_prefix("sig ") {
+                if let Some((id, sig)) = x.split_once('\t') { if let Ok(id) = id.parse::<usize>() { nres = nres.max(id + 1); seen.insert(sig.to_string()); } }
+            }
+        }
+    }
+    let open = |name: &str| std::fs::OpenOptions::new().create(true).write(true).append(resuming).truncate(!resuming).open(format!("{}/{}", outdir, name)).unwrap();
+    let mut tsv = open("results.tsv");
+    let jsonl = open("results.jsonl");
+    let mut ckpt = open("checkpoint.txt");
+    *LOG.lock().unwrap() = Some(open("run.log"));
+    if !resuming {
+        writeln!(tsv, "id\tclass\tgroup\tgenus\tpieces\tA_viol\tQ_missing\tQ_edges\thull\trin\trcirc\troundness\thull_faces\tV\tE\tF\tcontent\tchain").unwrap();
+        writeln!(ckpt, "{}", config).unwrap();
+    }
+    let todo: Vec<usize> = (0..seeds.len()).filter(|i| !done[*i]).collect();
+    let nfin = AtomicUsize::new(seeds.len() - todo.len());
+    let shared = Mutex::new(Shared { seen, tsv, jsonl, ckpt, n: nres, reasons: Default::default() });
+    say(format!("{}{}", if resuming { "resuming: " } else { "" }, config));
+    say(format!("through links {:?}", tab.thru.iter().map(|v| v.len()).collect::<Vec<_>>()));
+    say(format!("solids {} seeds {} ({} already done) threads {} axtab {:?} links {:?}", lib.len(), seeds.len(), seeds.len() - todo.len(), threads,
+        tab.ax.iter().map(|v| v.len()).collect::<Vec<_>>(), tab.links.iter().map(|v| v.len()).collect::<Vec<_>>()));
     let next = AtomicUsize::new(0);
     let (tests, hits) = (AtomicU64::new(0), AtomicU64::new(0));
     let t0 = std::time::Instant::now();
     std::thread::scope(|sc| {
         if std::env::var("WATCH").is_ok() {
             sc.spawn(|| while G_DONE.load(Ordering::Relaxed) == 0 {
-                std::thread::sleep(std::time::Duration::from_secs(10));
-                eprintln!("watch {:.0}s tests {} hits {} quick {} validate_cpu_s {:.1}", t0.elapsed().as_secs_f64(), G_TESTS.load(Ordering::Relaxed),
-                    G_HITS.load(Ordering::Relaxed), G_QUICK.load(Ordering::Relaxed), G_VAL_NS.load(Ordering::Relaxed) as f64 / 1e9);
+                // sleep in short steps so the process exits promptly when the work is done
+                for _ in 0..40 { if G_DONE.load(Ordering::Relaxed) != 0 { return; } std::thread::sleep(std::time::Duration::from_millis(250)); }
+                say(format!("watch {:.0}s seeds {}/{} tests {} hits {} quick {} validate_cpu_s {:.1}", t0.elapsed().as_secs_f64(), nfin.load(Ordering::Relaxed), seeds.len(), G_TESTS.load(Ordering::Relaxed),
+                    G_HITS.load(Ordering::Relaxed), G_QUICK.load(Ordering::Relaxed), G_VAL_NS.load(Ordering::Relaxed) as f64 / 1e9));
                 let parts: Vec<String> = (0..12).filter(|k| G_R[*k].load(Ordering::Relaxed) > 0).map(|k| format!("{} n={} cpu={:.1}s", RNAMES[k], G_R[k].load(Ordering::Relaxed), G_RNS[k].load(Ordering::Relaxed) as f64 / 1e9)).collect();
-                eprintln!("  {}", parts.join(" | "));
+                say(format!("  {}", parts.join(" | ")));
             });
         }
         let workers: Vec<_> = (0..threads).map(|_| {
             sc.spawn(|| loop {
-                let i = next.fetch_add(1, Ordering::Relaxed);
-                if i >= seeds.len() { break; }
+                let k = next.fetch_add(1, Ordering::Relaxed);
+                if k >= todo.len() { break; }
+                let i = todo[k];
                 let (si, ai, f) = seeds[i];
                 let s = &lib[si];
                 let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, na: s.axes[ai].1, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
@@ -313,16 +363,21 @@ fn main() {
                 let w = s.frames[f][0];
                 dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces);
                 tests.fetch_add(ctx.tests, Ordering::Relaxed);
-                { let mut sh = shared.lock().unwrap(); for (k, v) in &ctx.reasons { *sh.reasons.entry(*k).or_insert(0) += *v; } }
+                {
+                    let mut sh = shared.lock().unwrap();
+                    for (k, v) in &ctx.reasons { *sh.reasons.entry(*k).or_insert(0) += *v; }
+                    // the seed's results are already on disk, so it is safe to mark it complete
+                    writeln!(sh.ckpt, "seed {}", i).unwrap();
+                }
                 hits.fetch_add(ctx.hits, Ordering::Relaxed);
-                if i % 10 == 0 { eprintln!("seed {}/{} {:.0}s", i, seeds.len(), t0.elapsed().as_secs_f64()); }
+                let nf = nfin.fetch_add(1, Ordering::Relaxed) + 1;
+                if nf % 10 == 0 || nf == seeds.len() { say(format!("seeds done {}/{} {:.0}s", nf, seeds.len(), t0.elapsed().as_secs_f64())); }
             })
         }).collect();
         for w in workers { w.join().unwrap(); }
         G_DONE.store(1, Ordering::Relaxed);
     });
     let sh = shared.lock().unwrap();
-    eprintln!("sat {} improper {}", validate::T[4].load(Ordering::Relaxed) / 1000000, validate::T[5].load(Ordering::Relaxed) / 1000000);
-    eprintln!("stage ms: group {} collide {} mesh {} AQ {}", validate::T[0].load(Ordering::Relaxed) / 1000000, validate::T[1].load(Ordering::Relaxed) / 1000000, validate::T[2].load(Ordering::Relaxed) / 1000000, validate::T[3].load(Ordering::Relaxed) / 1000000);
-    eprintln!("done {:.1}s tests {} hits {} unique {} reasons {:?}", t0.elapsed().as_secs_f64(), tests.load(Ordering::Relaxed), hits.load(Ordering::Relaxed), sh.n, sh.reasons);
+    say(format!("done {:.1}s tests {} hits {} unique {} reasons {:?}{}", t0.elapsed().as_secs_f64(), tests.load(Ordering::Relaxed), hits.load(Ordering::Relaxed), sh.n, sh.reasons,
+        if todo.len() < seeds.len() { " (counts cover this session only; unique is the total)" } else { "" }));
 }
