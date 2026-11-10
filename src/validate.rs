@@ -168,6 +168,92 @@ pub fn support_planes(pts: &[V3], u: V3, v: V3, centre: V3) -> Vec<(V3, f64)> {
     out
 }
 
+/// The orbit's pieces with their vertices generated on demand into one flat buffer, so tests
+/// that can dismiss a whole piece by its bounding sphere never transform its vertices.
+pub struct Orbit<'a> {
+    lib: &'a [Solid],
+    pub cs: Vec<(usize, Xf)>,
+    off: Vec<usize>,
+    all: &'a mut Vec<V3>,
+    have: Vec<bool>,
+}
+impl<'a> Orbit<'a> {
+    fn new(lib: &'a [Solid], cs: Vec<(usize, Xf)>, all: &'a mut Vec<V3>) -> Orbit<'a> {
+        let mut off = Vec::with_capacity(cs.len() + 1);
+        let mut n = 0;
+        for c in &cs { off.push(n); n += lib[c.0].v.len(); }
+        off.push(n);
+        let have = vec![false; cs.len()];
+        // the buffer is reused between candidates; stale contents are guarded by `have`
+        if all.len() < n { all.resize(n, [0.0; 3]); }
+        Orbit { lib, cs, off, all, have }
+    }
+    fn pts(&mut self, j: usize) -> &[V3] {
+        let (a, b) = (self.off[j], self.off[j + 1]);
+        if !self.have[j] {
+            let (s, xf) = self.cs[j];
+            for (k, v) in self.lib[s].v.iter().enumerate() { self.all[a + k] = xf.ap(*v); }
+            self.have[j] = true;
+        }
+        &self.all[a..b]
+    }
+}
+
+/// support_planes over an orbit, skipping pieces whose bounding sphere lies inside the wedge
+/// already spanned.
+fn support_planes_orbit(ob: &mut Orbit, u: V3, v: V3, centre: V3) -> Vec<(V3, f64)> {
+    let d = unit(sub(v, u));
+    let t = if d[0].abs() < 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
+    let e1 = unit(cross(d, t));
+    let e2 = cross(d, e1);
+    let mut rf: Option<(f64, f64)> = None;
+    let (mut hi, mut lo): (Option<(f64, f64)>, Option<(f64, f64)>) = (None, None);
+    let (mut xhi, mut xlo, mut xrf) = ([0.0; 3], [0.0; 3], [0.0; 3]);
+    let mut opp = false;
+    let cr = |a: (f64, f64), b: (f64, f64)| a.0 * b.1 - a.1 * b.0;
+    let n2 = |a: (f64, f64)| a.0 * a.0 + a.1 * a.1;
+    for j in 0..ob.cs.len() {
+        if let (Some(h), Some(l)) = (hi, lo) {
+            let (s, xf) = ob.cs[j];
+            let x = sub(xf.t, u);
+            let qc = (dot(x, e1), dot(x, e2));
+            let r = ob.lib[s].radius + 1e-6;
+            if cr(l, qc) >= r * n2(l).sqrt() && cr(qc, h) >= r * n2(h).sqrt() { continue; }
+        }
+        let n = ob.off[j + 1] - ob.off[j];
+        for k in 0..n {
+            let p = ob.pts(j)[k];
+            let x = sub(p, u);
+            let q = (dot(x, e1), dot(x, e2));
+            if n2(q) < 1e-12 { continue; }
+            let r = match rf { None => { rf = Some(q); xrf = x; continue; } Some(r) => r };
+            let s = cr(r, q);
+            if s * s <= 1e-13 * n2(r) * n2(q) {
+                if r.0 * q.0 + r.1 * q.1 < 0.0 { opp = true; if hi.is_some() && lo.is_some() { return Vec::new(); } }
+                continue;
+            }
+            if s > 0.0 {
+                if hi.map_or(true, |h| cr(h, q) > 0.0) { hi = Some(q); xhi = x; }
+            } else if lo.map_or(true, |l| cr(l, q) < 0.0) { lo = Some(q); xlo = x; }
+            if let (Some(h), Some(l)) = (hi, lo) {
+                if opp { return Vec::new(); }
+                let c = cr(l, h);
+                if c < 0.0 && c * c > 1e-13 * n2(l) * n2(h) { return Vec::new(); }
+            }
+        }
+    }
+    if rf.is_none() { return Vec::new(); }
+    let cands: Vec<V3> = if opp { vec![xrf] } else { vec![if lo.is_some() { xlo } else { xrf }, if hi.is_some() { xhi } else { xrf }] };
+    let mut out: Vec<(V3, f64)> = Vec::new();
+    for q in cands {
+        let mut n = unit(cross(d, q));
+        if dot(n, sub(centre, u)) > 0.0 { n = scale(n, -1.0); }
+        let c = dot(n, u);
+        if !out.iter().any(|(m, k)| dist(*m, n) < 1e-6 && (k - c).abs() < 1e-6) { out.push((n, c)); }
+    }
+    out
+}
+
 pub struct Welder { map: HashMap<(i64, i64, i64), u32>, pub pts: Vec<V3> }
 impl Welder {
     pub fn new() -> Welder { Welder { map: HashMap::default(), pts: Vec::new() } }
@@ -215,7 +301,7 @@ pub struct Res {
 
 /// Build the orbit of reps under gens, check it is a valid embedded closed surface, and measure it.
 /// Err(reason) on rejection.
-pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], centre: V3, prescreen: bool) -> Result<Res, &'static str> {
+pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], centre: V3, prescreen: bool, scratch: &mut Vec<V3>) -> Result<Res, &'static str> {
     let mut tm = std::time::Instant::now();
     // the centre strictly inside an off-centre piece means that piece meets its own images
     for &(s, x) in reps {
@@ -224,8 +310,124 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], centre: V3, pre
         if norm(o) > 1e-6 && (0..sl.faces.len()).all(|f| dot(sl.fnorm[f], sub(o, sl.v[sl.faces[f][0]])) < -1e-6) { return Err("overlap-centre"); }
     }
     tick(0, &mut tm);
-    // collisions: representatives against each other and against every image, built lazily
+    // cheapest certificate first, before any piece is placed: inscribed spheres of a
+    // representative and an image overlap
+    for g in &grp[1..] {
+        for &(s, x) in reps {
+            let c = g.ap(x.t);
+            for &(s2, x2) in reps {
+                let d = sub(x2.t, c);
+                let d2 = dot(d, d);
+                let r = lib[s2].inr + lib[s].inr - 1e-4;
+                if d2 > 1e-10 && d2 < r * r { return Err("overlap-sphere"); }
+            }
+        }
+    }
     let rp: Vec<Placed> = reps.iter().map(|&(s, x)| place(lib, s, x)).collect();
+    // The (Q) screens run before the collision test: they are cheaper and reject almost everything.
+    // orbit as bare points (one flat buffer); pieces are only built if the pre-screens pass
+    let nrep = rp.len();
+    let mut cs: Vec<(usize, Xf)> = reps.to_vec();
+    let mut seen = Welder::new();
+    for c in &cs { seen.id(c.1.t); }
+    for g in &grp[1..] {
+        for &(s, x) in reps {
+            let xf = g.mul(&x);
+            // an image coinciding with an earlier piece (already known to be the same piece)
+            if (seen.id(xf.t) as usize) < cs.len() { continue; }
+            cs.push((s, xf));
+        }
+    }
+    let mut ob = Orbit::new(lib, cs, scratch);
+    // (Q) pre-screen at the outermost vertex, which is certainly a hull vertex: its unit-distance
+    // neighbours must span a cone containing every other vertex, or some hull edge there is not unit.
+    // By symmetry the outermost vertex can be taken on a representative.
+    if prescreen {
+        let mut vs = centre;
+        let mut far = -1.0;
+        for r in &rp { for v in &r.v { let d = dist(*v, centre); if d > far { far = d; vs = *v; } } }
+        let mut dirs: Vec<V3> = Vec::new();
+        for j in 0..ob.cs.len() {
+            let (s, xf) = ob.cs[j];
+            if dist(xf.t, vs) > lib[s].radius + 1.0 + 1e-6 { continue; }
+            for p in ob.pts(j) {
+                let d = sub(*p, vs);
+                if (dot(d, d) - 1.0).abs() < 2e-6 && !dirs.iter().any(|x| dist(*x, d) < 1e-6) { dirs.push(d); }
+            }
+        }
+        let mut facets: Vec<V3> = Vec::new();
+        for i in 0..dirs.len() {
+            for j in 0..i {
+                let n = cross(dirs[i], dirs[j]);
+                if norm(n) < 1e-7 { continue; }
+                let n = unit(n);
+                let (mut pos, mut neg) = (false, false);
+                for d in &dirs { let x = dot(*d, n); if x > 1e-7 { pos = true; } if x < -1e-7 { neg = true; } }
+                if pos && neg { continue; }
+                let n = if pos { scale(n, -1.0) } else { n };
+                if !facets.iter().any(|f| dist(*f, n) < 1e-6) { facets.push(n); }
+            }
+        }
+        if facets.len() < 3 { return Err("q-prescreen"); }
+        for j in 0..ob.cs.len() {
+            let (s, xf) = ob.cs[j];
+            let dc = sub(xf.t, vs);
+            if facets.iter().all(|n| dot(dc, *n) + lib[s].radius <= 0.0) { continue; }
+            for p in ob.pts(j) {
+                let d = sub(*p, vs);
+                if facets.iter().any(|n| dot(d, *n) > 1e-6) { return Err("q-prescreen"); }
+            }
+        }
+    }
+    // (Q) necessary condition on bare points, no mesh: every hull face found through a
+    // representative edge must have unit-length sides. Stops at the first failure.
+    if prescreen {
+        let mut done: Vec<(V3, f64)> = Vec::new();
+        let mut on: Vec<(f64, f64)> = Vec::new();
+        let mut hull: Vec<(f64, f64)> = Vec::new();
+        for r in &rp {
+            for &(ia, ib) in &lib[r.solid].edges {
+                'plane: for (n, c) in support_planes_orbit(&mut ob, r.v[ia], r.v[ib], centre) {
+                    if done.iter().any(|(m, k)| dist(*m, n) < 1e-6 && (k - c).abs() < 1e-6) { continue; }
+                    done.push((n, c));
+                    let t = if n[0].abs() < 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
+                    let e1 = unit(cross(n, t));
+                    let e2 = cross(n, e1);
+                    on.clear();
+                    for j in 0..ob.cs.len() {
+                        let (s, xf) = ob.cs[j];
+                        if dot(n, xf.t) - c + lib[s].radius < -1e-6 { continue; }
+                        for p in ob.pts(j) {
+                            let h = dot(n, *p) - c;
+                            if h > 1e-6 { continue 'plane; }
+                            if h > -1e-6 { on.push((dot(*p, e1), dot(*p, e2))); }
+                        }
+                    }
+                    on.sort_by(|a, b| ((a.0 * 1e6).round(), (a.1 * 1e6).round()).partial_cmp(&((b.0 * 1e6).round(), (b.1 * 1e6).round())).unwrap());
+                    let cr = |o: &(f64, f64), a: &(f64, f64), b: &(f64, f64)| (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0);
+                    hull.clear();
+                    for pass in 0..2 {
+                        let start = hull.len();
+                        for k in 0..on.len() {
+                            let p = if pass == 0 { on[k] } else { on[on.len() - 1 - k] };
+                            while hull.len() >= start + 2 && cr(&hull[hull.len() - 2], &hull[hull.len() - 1], &p) <= 1e-9 { hull.pop(); }
+                            hull.push(p);
+                        }
+                        hull.pop();
+                    }
+                    for i in 0..hull.len() {
+                        let (a, b) = (hull[i], hull[(i + 1) % hull.len()]);
+                        let l = ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt();
+                        // coincident points from neighbouring pieces can survive the hull as zero-length sides
+                        if l > 1e-5 && (l - 1.0).abs() > 1e-5 { return Err("q-proxy"); }
+                    }
+                }
+            }
+        }
+    }
+    let cs = ob.cs;
+    // collisions, only for candidates that survived the (Q) screens: representatives against
+    // each other and against every image, built lazily
     let mut touching: Vec<(usize, Placed, V3)> = Vec::new();
     let mut rtouch: Vec<(usize, usize, V3)> = Vec::new();
     for i in 0..rp.len() {
@@ -236,16 +438,6 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], centre: V3, pre
                 let (g, ax) = sat(&rp[i], &rp[j]);
                 if g < -EPS { return Err("overlap-chain"); }
                 if g <= EPS { rtouch.push((i, j, ax)); }
-            }
-        }
-    }
-    // cheapest certificate first: inscribed spheres of a representative and an image overlap
-    for g in &grp[1..] {
-        for &(s, x) in reps {
-            let c = g.ap(x.t);
-            for a in &rp {
-                let d = dist(a.c, c);
-                if d > 1e-5 && d < a.inr + lib[s].inr - 1e-4 { return Err("overlap-sphere"); }
             }
         }
     }
@@ -272,84 +464,6 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], centre: V3, pre
     for (i, j, ax) in &rtouch { if improper(lib, &rp[*i], &rp[*j], *ax) { return Err("contact"); } }
     for (i, im, ax) in &touching { if improper(lib, &rp[*i], im, *ax) { return Err("contact"); } }
     tick(1, &mut tm);
-    // orbit as bare points (one flat buffer); pieces are only built if the pre-screens pass
-    let nrep = rp.len();
-    let mut cs: Vec<(usize, Xf)> = reps.to_vec();
-    for g in &grp[1..] {
-        for &(s, x) in reps {
-            let xf = g.mul(&x);
-            if cs.iter().any(|p| dist(p.1.t, xf.t) < 1e-5) { continue; }
-            cs.push((s, xf));
-        }
-    }
-    let mut all: Vec<V3> = Vec::with_capacity(cs.iter().map(|c| lib[c.0].v.len()).sum());
-    for &(s, xf) in &cs { for v in &lib[s].v { all.push(xf.ap(*v)); } }
-    // (Q) pre-screen at the outermost vertex, which is certainly a hull vertex: its unit-distance
-    // neighbours must span a cone containing every other vertex, or some hull edge there is not unit.
-    if prescreen {
-        let mut vs = centre;
-        let mut far = -1.0;
-        for v in &all { let d = dist(*v, centre); if d > far { far = d; vs = *v; } }
-        let mut dirs: Vec<V3> = Vec::new();
-        for v in &all {
-            let d = sub(*v, vs);
-            if (dot(d, d) - 1.0).abs() < 2e-6 && !dirs.iter().any(|x| dist(*x, d) < 1e-6) { dirs.push(d); }
-        }
-        let mut facets: Vec<V3> = Vec::new();
-        for i in 0..dirs.len() {
-            for j in 0..i {
-                let n = cross(dirs[i], dirs[j]);
-                if norm(n) < 1e-7 { continue; }
-                let n = unit(n);
-                let (mut pos, mut neg) = (false, false);
-                for d in &dirs { let x = dot(*d, n); if x > 1e-7 { pos = true; } if x < -1e-7 { neg = true; } }
-                if pos && neg { continue; }
-                let n = if pos { scale(n, -1.0) } else { n };
-                if !facets.iter().any(|f| dist(*f, n) < 1e-6) { facets.push(n); }
-            }
-        }
-        if facets.len() < 3 { return Err("q-prescreen"); }
-        for v in &all {
-            let d = sub(*v, vs);
-            if facets.iter().any(|n| dot(d, *n) > 1e-6) { return Err("q-prescreen"); }
-        }
-    }
-    // (Q) necessary condition on bare points, no mesh: every hull face found through a
-    // representative edge must have unit-length sides. Stops at the first failure.
-    if prescreen {
-        let mut done: Vec<(V3, f64)> = Vec::new();
-        for r in &rp {
-            for &(ia, ib) in &lib[r.solid].edges {
-                for (n, c) in support_planes(&all, r.v[ia], r.v[ib], centre) {
-                    if done.iter().any(|(m, k)| dist(*m, n) < 1e-6 && (k - c).abs() < 1e-6) { continue; }
-                    done.push((n, c));
-                    if all.iter().any(|p| dot(n, *p) - c > 1e-6) { continue; }
-                    let t = if n[0].abs() < 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
-                    let e1 = unit(cross(n, t));
-                    let e2 = cross(n, e1);
-                    let mut on: Vec<(f64, f64)> = all.iter().filter(|p| (dot(n, **p) - c).abs() < 1e-6).map(|p| (dot(*p, e1), dot(*p, e2))).collect();
-                    on.sort_by(|a, b| ((a.0 * 1e6).round(), (a.1 * 1e6).round()).partial_cmp(&((b.0 * 1e6).round(), (b.1 * 1e6).round())).unwrap());
-                    let cr = |o: &(f64, f64), a: &(f64, f64), b: &(f64, f64)| (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0);
-                    let mut hull: Vec<(f64, f64)> = Vec::new();
-                    for pass in 0..2 {
-                        let start = hull.len();
-                        for k in 0..on.len() {
-                            let p = if pass == 0 { on[k] } else { on[on.len() - 1 - k] };
-                            while hull.len() >= start + 2 && cr(&hull[hull.len() - 2], &hull[hull.len() - 1], &p) <= 1e-9 { hull.pop(); }
-                            hull.push(p);
-                        }
-                        hull.pop();
-                    }
-                    for i in 0..hull.len() {
-                        let (a, b) = (hull[i], hull[(i + 1) % hull.len()]);
-                        let l = ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt();
-                        // coincident points from neighbouring pieces can survive the hull as zero-length sides
-                        if l > 1e-5 && (l - 1.0).abs() > 1e-5 { return Err("q-proxy"); }
-                    }
-                }
-            }
-        }
-    }
     // full pieces for the mesh
     let mut pcs: Vec<Placed> = rp;
     for &(s, xf) in &cs[nrep..] { pcs.push(place(lib, s, xf)); }

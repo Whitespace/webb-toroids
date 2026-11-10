@@ -8,6 +8,15 @@ use std::io::Write;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Mutex;
 
+static G_TESTS: AtomicU64 = AtomicU64::new(0);
+static G_HITS: AtomicU64 = AtomicU64::new(0);
+static G_QUICK: AtomicU64 = AtomicU64::new(0);
+static G_VAL_NS: AtomicU64 = AtomicU64::new(0);
+const RNAMES: [&str; 12] = ["overlap-centre", "overlap-chain", "overlap-sphere", "overlap", "contact", "q-prescreen", "q-proxy", "nonmanifold", "pinch", "disconnected", "genus0", "other"];
+static G_R: [AtomicU64; 12] = [const { AtomicU64::new(0) }; 12];
+static G_RNS: [AtomicU64; 12] = [const { AtomicU64::new(0) }; 12];
+static G_DONE: AtomicU64 = AtomicU64::new(0);
+
 const FLIP: M3 = [[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]];
 
 struct AxEntry { solid: usize, face: usize, k: usize, order: usize, xp: Xf, p: V3, w: V3 }
@@ -91,6 +100,7 @@ struct Ctx<'a> {
     hits: u64,
     desc: Vec<String>,
     reasons: std::collections::HashMap<&'static str, u64>,
+    scratch: Vec<V3>,
 }
 
 fn divisors(n: usize) -> Vec<usize> { [2usize, 3, 4, 5].iter().cloned().filter(|d| n % d == 0).collect() }
@@ -155,6 +165,7 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
     let u = mv(&wi.r, ctx.u);
     let tab = ctx.tab;
     ctx.tests += tab.ax[n].len() as u64;
+    G_TESTS.fetch_add(tab.ax[n].len() as u64, Ordering::Relaxed);
     for e in &tab.ax[n] {
         let cs = dot(u, e.w);
         let c = cs.abs();
@@ -179,6 +190,7 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
             for &q in &bq {
                 let rec = match tab.pq.iter().find(|x| x.0 == p && x.1 == q && (x.2 - cs).abs() < 1e-7 && x.3.len() >= ctx.minorder) { Some(x) => &x.3, None => continue };
                 ctx.hits += 1;
+                G_HITS.fetch_add(1, Ordering::Relaxed);
                 let gens = [Xf::about(centre, ctx.u, 2.0 * std::f64::consts::PI / p as f64), Xf::about(centre, wb, 2.0 * std::f64::consts::PI / q as f64)];
                 // quick reject: inscribed spheres of chain pieces against their images under the generators
                 let mut quick = false;
@@ -193,9 +205,13 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
                         }
                     }
                 }
-                if quick { *ctx.reasons.entry("overlap-quick").or_insert(0) += 1; continue; }
+                if quick { G_QUICK.fetch_add(1, Ordering::Relaxed); *ctx.reasons.entry("overlap-quick").or_insert(0) += 1; continue; }
+                let t0 = std::time::Instant::now();
                 let grp = from_recipe(&gens, rec);
-                let res = validate::validate(ctx.lib, pieces, &grp, centre, ctx.near == 0);
+                let res = validate::validate(ctx.lib, pieces, &grp, centre, ctx.near == 0, &mut ctx.scratch);
+                let ns = t0.elapsed().as_nanos() as u64;
+                G_VAL_NS.fetch_add(ns, Ordering::Relaxed);
+                if let Err(r) = &res { let k = RNAMES.iter().position(|x| x == r).unwrap_or(11); G_R[k].fetch_add(1, Ordering::Relaxed); G_RNS[k].fetch_add(ns, Ordering::Relaxed); }
                 if res.is_ok() {
                     ctx.desc.push(format!("{}[f{} k{} ax{}]", ctx.lib[e.solid].name, e.face, e.k, e.order));
                     let reps: Vec<(usize, Xf)> = pieces.clone();
@@ -276,14 +292,23 @@ fn main() {
     let (tests, hits) = (AtomicU64::new(0), AtomicU64::new(0));
     let t0 = std::time::Instant::now();
     std::thread::scope(|sc| {
-        for _ in 0..threads {
+        if std::env::var("WATCH").is_ok() {
+            sc.spawn(|| while G_DONE.load(Ordering::Relaxed) == 0 {
+                std::thread::sleep(std::time::Duration::from_secs(10));
+                eprintln!("watch {:.0}s tests {} hits {} quick {} validate_cpu_s {:.1}", t0.elapsed().as_secs_f64(), G_TESTS.load(Ordering::Relaxed),
+                    G_HITS.load(Ordering::Relaxed), G_QUICK.load(Ordering::Relaxed), G_VAL_NS.load(Ordering::Relaxed) as f64 / 1e9);
+                let parts: Vec<String> = (0..12).filter(|k| G_R[*k].load(Ordering::Relaxed) > 0).map(|k| format!("{} n={} cpu={:.1}s", RNAMES[k], G_R[k].load(Ordering::Relaxed), G_RNS[k].load(Ordering::Relaxed) as f64 / 1e9)).collect();
+                eprintln!("  {}", parts.join(" | "));
+            });
+        }
+        let workers: Vec<_> = (0..threads).map(|_| {
             sc.spawn(|| loop {
                 let i = next.fetch_add(1, Ordering::Relaxed);
                 if i >= seeds.len() { break; }
                 let (si, ai, f) = seeds[i];
                 let s = &lib[si];
                 let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, na: s.axes[ai].1, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
-                    desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default() };
+                    desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Vec::new() };
                 let mut pieces = vec![(ctx.a, Xf::ident())];
                 let w = s.frames[f][0];
                 dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces);
@@ -291,8 +316,10 @@ fn main() {
                 { let mut sh = shared.lock().unwrap(); for (k, v) in &ctx.reasons { *sh.reasons.entry(*k).or_insert(0) += *v; } }
                 hits.fetch_add(ctx.hits, Ordering::Relaxed);
                 if i % 10 == 0 { eprintln!("seed {}/{} {:.0}s", i, seeds.len(), t0.elapsed().as_secs_f64()); }
-            });
-        }
+            })
+        }).collect();
+        for w in workers { w.join().unwrap(); }
+        G_DONE.store(1, Ordering::Relaxed);
     });
     let sh = shared.lock().unwrap();
     eprintln!("sat {} improper {}", validate::T[4].load(Ordering::Relaxed) / 1000000, validate::T[5].load(Ordering::Relaxed) / 1000000);
