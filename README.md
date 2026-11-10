@@ -7,7 +7,15 @@ faces. Only octahedral and icosahedral symmetry is searched.
 
 ## Build
 
-Needs a stable Rust toolchain (edition 2021, no dependencies).
+With [mise](https://mise.jdx.dev), which installs Rust and Python and creates `.venv`:
+
+    mise install
+    mise run build
+
+Other tasks: `mise run check runs/t1/off/*.off` and `mise run viewer` (both install numpy and
+scipy from `requirements.txt` first).
+
+Without mise it needs a stable Rust toolchain (edition 2021, no crate dependencies):
 
     cargo build --release
 

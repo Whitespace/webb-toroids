@@ -1,0 +1,24 @@
+[tools]
+rust = "stable"
+python = "3.12"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.build]
+description = "Build the search binary"
+run = "cargo build --release"
+
+[tasks.pydeps]
+description = "Install numpy and scipy for the Python scripts"
+run = "pip install -r requirements.txt"
+
+[tasks.check]
+description = "Independently check OFF files, e.g. mise run check runs/t1/off/*.off"
+depends = ["pydeps"]
+run = "python scripts/check.py"
+
+[tasks.viewer]
+description = "Rebuild viewer/index.html from viewer/picks.json"
+depends = ["pydeps"]
+run = "python viewer/build_viewer.py viewer/picks.json"
