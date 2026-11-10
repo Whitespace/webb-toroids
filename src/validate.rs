@@ -123,6 +123,51 @@ fn improper(lib: &[Solid], a: &Placed, b: &Placed, n: V3) -> bool {
     false
 }
 
+/// Supporting planes of the point set that contain the segment u-v (none if the segment is not on
+/// the hull). Planes are (outward unit normal, offset). All points must project into a half-plane
+/// through the segment; the extreme directions give the planes.
+pub fn support_planes(pts: &[V3], u: V3, v: V3, centre: V3) -> Vec<(V3, f64)> {
+    let d = unit(sub(v, u));
+    let t = if d[0].abs() < 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
+    let e1 = unit(cross(d, t));
+    let e2 = cross(d, e1);
+    let mut rf: Option<(f64, f64)> = None;
+    let (mut hi, mut lo): (Option<(f64, f64)>, Option<(f64, f64)>) = (None, None);
+    let (mut xhi, mut xlo, mut xrf) = ([0.0; 3], [0.0; 3], [0.0; 3]);
+    let mut opp = false;
+    let cr = |a: (f64, f64), b: (f64, f64)| a.0 * b.1 - a.1 * b.0;
+    let n2 = |a: (f64, f64)| a.0 * a.0 + a.1 * a.1;
+    for p in pts {
+        let x = sub(*p, u);
+        let q = (dot(x, e1), dot(x, e2));
+        if n2(q) < 1e-12 { continue; }
+        let r = match rf { None => { rf = Some(q); xrf = x; continue; } Some(r) => r };
+        let s = cr(r, q);
+        if s * s <= 1e-13 * n2(r) * n2(q) {
+            if r.0 * q.0 + r.1 * q.1 < 0.0 { opp = true; if hi.is_some() && lo.is_some() { return Vec::new(); } }
+            continue;
+        }
+        if s > 0.0 {
+            if hi.map_or(true, |h| cr(h, q) > 0.0) { hi = Some(q); xhi = x; }
+        } else if lo.map_or(true, |l| cr(l, q) < 0.0) { lo = Some(q); xlo = x; }
+        if let (Some(h), Some(l)) = (hi, lo) {
+            if opp { return Vec::new(); }
+            let c = cr(l, h);
+            if c < 0.0 && c * c > 1e-13 * n2(l) * n2(h) { return Vec::new(); }
+        }
+    }
+    if rf.is_none() { return Vec::new(); }
+    let cands: Vec<V3> = if opp { vec![xrf] } else { vec![if lo.is_some() { xlo } else { xrf }, if hi.is_some() { xhi } else { xrf }] };
+    let mut out: Vec<(V3, f64)> = Vec::new();
+    for q in cands {
+        let mut n = unit(cross(d, q));
+        if dot(n, sub(centre, u)) > 0.0 { n = scale(n, -1.0); }
+        let c = dot(n, u);
+        if !out.iter().any(|(m, k)| dist(*m, n) < 1e-6 && (k - c).abs() < 1e-6) { out.push((n, c)); }
+    }
+    out
+}
+
 pub struct Welder { map: HashMap<(i64, i64, i64), u32>, pub pts: Vec<V3> }
 impl Welder {
     pub fn new() -> Welder { Welder { map: HashMap::default(), pts: Vec::new() } }
@@ -227,29 +272,28 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], centre: V3, pre
     for (i, j, ax) in &rtouch { if improper(lib, &rp[*i], &rp[*j], *ax) { return Err("contact"); } }
     for (i, im, ax) in &touching { if improper(lib, &rp[*i], im, *ax) { return Err("contact"); } }
     tick(1, &mut tm);
-    // orbit, deduplicated
-    let mut pcs: Vec<Placed> = rp;
-    let nrep = pcs.len();
+    // orbit as bare points (one flat buffer); pieces are only built if the pre-screens pass
+    let nrep = rp.len();
+    let mut cs: Vec<(usize, Xf)> = reps.to_vec();
     for g in &grp[1..] {
         for &(s, x) in reps {
             let xf = g.mul(&x);
-            if pcs.iter().any(|p| dist(p.c, xf.t) < 1e-5) { continue; }
-            pcs.push(place(lib, s, xf));
+            if cs.iter().any(|p| dist(p.1.t, xf.t) < 1e-5) { continue; }
+            cs.push((s, xf));
         }
     }
+    let mut all: Vec<V3> = Vec::with_capacity(cs.iter().map(|c| lib[c.0].v.len()).sum());
+    for &(s, xf) in &cs { for v in &lib[s].v { all.push(xf.ap(*v)); } }
     // (Q) pre-screen at the outermost vertex, which is certainly a hull vertex: its unit-distance
     // neighbours must span a cone containing every other vertex, or some hull edge there is not unit.
     if prescreen {
         let mut vs = centre;
         let mut far = -1.0;
-        for p in &pcs { for v in &p.v { let d = dist(*v, centre); if d > far { far = d; vs = *v; } } }
+        for v in &all { let d = dist(*v, centre); if d > far { far = d; vs = *v; } }
         let mut dirs: Vec<V3> = Vec::new();
-        for p in &pcs {
-            if dist(p.c, vs) > p.r + 1.0 + 1e-6 { continue; }
-            for v in &p.v {
-                let d = sub(*v, vs);
-                if (norm(d) - 1.0).abs() < 1e-6 && !dirs.iter().any(|x| dist(*x, d) < 1e-6) { dirs.push(d); }
-            }
+        for v in &all {
+            let d = sub(*v, vs);
+            if (dot(d, d) - 1.0).abs() < 2e-6 && !dirs.iter().any(|x| dist(*x, d) < 1e-6) { dirs.push(d); }
         }
         let mut facets: Vec<V3> = Vec::new();
         for i in 0..dirs.len() {
@@ -265,13 +309,50 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], centre: V3, pre
             }
         }
         if facets.len() < 3 { return Err("q-prescreen"); }
-        for p in &pcs {
-            for v in &p.v {
-                let d = sub(*v, vs);
-                if facets.iter().any(|n| dot(d, *n) > 1e-6) { return Err("q-prescreen"); }
+        for v in &all {
+            let d = sub(*v, vs);
+            if facets.iter().any(|n| dot(d, *n) > 1e-6) { return Err("q-prescreen"); }
+        }
+    }
+    // (Q) necessary condition on bare points, no mesh: every hull face found through a
+    // representative edge must have unit-length sides. Stops at the first failure.
+    if prescreen {
+        let mut done: Vec<(V3, f64)> = Vec::new();
+        for r in &rp {
+            for &(ia, ib) in &lib[r.solid].edges {
+                for (n, c) in support_planes(&all, r.v[ia], r.v[ib], centre) {
+                    if done.iter().any(|(m, k)| dist(*m, n) < 1e-6 && (k - c).abs() < 1e-6) { continue; }
+                    done.push((n, c));
+                    if all.iter().any(|p| dot(n, *p) - c > 1e-6) { continue; }
+                    let t = if n[0].abs() < 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
+                    let e1 = unit(cross(n, t));
+                    let e2 = cross(n, e1);
+                    let mut on: Vec<(f64, f64)> = all.iter().filter(|p| (dot(n, **p) - c).abs() < 1e-6).map(|p| (dot(*p, e1), dot(*p, e2))).collect();
+                    on.sort_by(|a, b| ((a.0 * 1e6).round(), (a.1 * 1e6).round()).partial_cmp(&((b.0 * 1e6).round(), (b.1 * 1e6).round())).unwrap());
+                    let cr = |o: &(f64, f64), a: &(f64, f64), b: &(f64, f64)| (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0);
+                    let mut hull: Vec<(f64, f64)> = Vec::new();
+                    for pass in 0..2 {
+                        let start = hull.len();
+                        for k in 0..on.len() {
+                            let p = if pass == 0 { on[k] } else { on[on.len() - 1 - k] };
+                            while hull.len() >= start + 2 && cr(&hull[hull.len() - 2], &hull[hull.len() - 1], &p) <= 1e-9 { hull.pop(); }
+                            hull.push(p);
+                        }
+                        hull.pop();
+                    }
+                    for i in 0..hull.len() {
+                        let (a, b) = (hull[i], hull[(i + 1) % hull.len()]);
+                        let l = ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt();
+                        // coincident points from neighbouring pieces can survive the hull as zero-length sides
+                        if l > 1e-5 && (l - 1.0).abs() > 1e-5 { return Err("q-proxy"); }
+                    }
+                }
             }
         }
     }
+    // full pieces for the mesh
+    let mut pcs: Vec<Placed> = rp;
+    for &(s, xf) in &cs[nrep..] { pcs.push(place(lib, s, xf)); }
     // boundary mesh
     let mut w = Welder::new();
     let mut fmap: HashMap<(u32, u64, u64), (u8, Vec<u32>, usize)> = HashMap::default();
@@ -367,43 +448,7 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], centre: V3, pre
     for &(ia, ib) in &rep_edges {
         if !de.contains_key(&(ia, ib)) { continue; }
         let (u, v) = (pts[ia as usize], pts[ib as usize]);
-        let d = unit(sub(v, u));
-        let t = if d[0].abs() < 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
-        let e1 = unit(cross(d, t));
-        let e2 = cross(d, e1);
-        // all points must project into a half-plane through the edge; track the extreme directions
-        let mut rf: Option<(f64, f64)> = None;
-        let (mut hi, mut lo): (Option<(f64, f64)>, Option<(f64, f64)>) = (None, None);
-        let (mut xhi, mut xlo, mut xrf) = ([0.0; 3], [0.0; 3], [0.0; 3]);
-        let mut opp = false;
-        let mut ok = true;
-        let cr = |a: (f64, f64), b: (f64, f64)| a.0 * b.1 - a.1 * b.0;
-        let n2 = |a: (f64, f64)| a.0 * a.0 + a.1 * a.1;
-        for p in &pts {
-            let x = sub(*p, u);
-            let q = (dot(x, e1), dot(x, e2));
-            if n2(q) < 1e-12 { continue; }
-            let r = match rf { None => { rf = Some(q); xrf = x; continue; } Some(r) => r };
-            let s = cr(r, q);
-            if s * s <= 1e-13 * n2(r) * n2(q) {
-                if r.0 * q.0 + r.1 * q.1 < 0.0 { opp = true; if hi.is_some() && lo.is_some() { ok = false; break; } }
-                continue;
-            }
-            if s > 0.0 {
-                if hi.map_or(true, |h| cr(h, q) > 0.0) { hi = Some(q); xhi = x; }
-            } else if lo.map_or(true, |l| cr(l, q) < 0.0) { lo = Some(q); xlo = x; }
-            if let (Some(h), Some(l)) = (hi, lo) {
-                if opp { ok = false; break; }
-                let c = cr(l, h);
-                if c < 0.0 && c * c > 1e-13 * n2(l) * n2(h) { ok = false; break; }
-            }
-        }
-        if !ok || rf.is_none() { continue; }
-        let cands: Vec<V3> = if opp { vec![xrf] } else { vec![if lo.is_some() { xlo } else { xrf }, if hi.is_some() { xhi } else { xrf }] };
-        for q in cands {
-            let mut n = unit(cross(d, q));
-            if dot(n, sub(centre, u)) > 0.0 { n = scale(n, -1.0); }
-            let c = dot(n, u);
+        for (n, c) in support_planes(&pts, u, v, centre) {
             if !planes.iter().any(|(m, k)| dist(*m, n) < 1e-6 && (k - c).abs() < 1e-6) { planes.push((n, c)); }
         }
     }
@@ -424,7 +469,7 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], centre: V3, pre
         for (i, p) in pts.iter().enumerate() {
             if (dot(n, *p) - c).abs() < 1e-6 { on.push((dot(*p, e1), dot(*p, e2), i as u32)); }
         }
-        on.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        on.sort_by(|a, b| ((a.0 * 1e6).round(), (a.1 * 1e6).round()).partial_cmp(&((b.0 * 1e6).round(), (b.1 * 1e6).round())).unwrap());
         let cr = |o: &(f64, f64, u32), a: &(f64, f64, u32), b: &(f64, f64, u32)| (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0);
         let mut hull: Vec<(f64, f64, u32)> = Vec::new();
         for pass in 0..2 {
