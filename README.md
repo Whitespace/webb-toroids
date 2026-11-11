@@ -51,6 +51,8 @@ Directly:
 | `--any K` | how many of those links may be arbitrary solids; the rest must be entered and left through antiparallel faces | 1 |
 | `--min-group N` | 24 keeps octahedral and icosahedral, 60 icosahedral only | 24 |
 | `--near N` | also keep results with up to N hull edges missing (turns off the pre-screen) | 0 |
+| `--max-radius R` | drop chains with a piece centre further than R edge lengths from the seed axis or the centre (Webb's toroid: 6.2) | none |
+| `--max-pieces N` | reject candidates with more than N pieces (Webb's toroid: 152) | none |
 | `--only a,b,c` | restrict the library to these solids (names as in `solids.txt`) | all |
 | `--seeds a,b,c` | restrict which solids may be the seed | all |
 | `--seed-range A:B` | run seeds A to B-1 only, to split a run | all |

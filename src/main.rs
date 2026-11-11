@@ -128,6 +128,11 @@ struct Ctx<'a> {
     inside: (f64, f64),
     csbuf: Vec<f64>,
     st: Stats,
+    /// rotations about the seed axis, one per usable order; known before the chain is built
+    axrot: Vec<M3>,
+    /// --max-radius: no piece centre may be further than this from the seed axis or the centre
+    maxrad: f64,
+    pruned: u64,
 }
 
 /// Per-thread counters, pushed to the shared atomics now and then so the hot path never
@@ -234,7 +239,9 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
         let s = dot(cross(d, e.w), nn) / dot(nn, nn);
         let centre = scale(ctx.u, s);
         // a piece sitting on the centre gives a star of arms, not a shell; skip those
-        if s.abs() < 1e-6 || dist(centre, w.ap(e.p)) < 1e-6 { continue; }
+        let db = dist(centre, w.ap(e.p));
+        if s.abs() < 1e-6 || db < 1e-6 { continue; }
+        if s.abs() > ctx.maxrad || db > ctx.maxrad { continue; }
         // centre strictly inside the seed piece: it would meet its own images
         if s > ctx.inside.0 && s < ctx.inside.1 { continue; }
         let xb = w.mul(&e.xp);
@@ -280,13 +287,54 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
     ctx.csbuf = buf;
 }
 
+/// True if no chain through this new link can survive, so the whole subtree is skipped. All
+/// three tests are ones every candidate below would fail later anyway:
+/// the link is too far from the seed axis (--max-radius); its inscribed sphere overlaps that of
+/// an earlier chain piece; or, for every usable rotation about the seed axis, it overlaps an
+/// image of a chain piece (the same test as the quick reject, done before the subtree is built).
+fn prune(ctx: &Ctx, sl: usize, cl: V3, pieces: &[(usize, Xf)]) -> bool {
+    let u = ctx.u;
+    let off = sub(cl, scale(u, dot(cl, u)));
+    if dot(off, off) > ctx.maxrad * ctx.maxrad { return true; }
+    let il = ctx.lib[sl].inr;
+    for &(s, x) in pieces {
+        let r = il + ctx.lib[s].inr - 1e-4;
+        let d = sub(cl, x.t);
+        let d2 = dot(d, d);
+        if d2 > 1e-10 && d2 < r * r { return true; }
+    }
+    if ctx.axrot.is_empty() { return false; }
+    'rot: for g in &ctx.axrot {
+        // the link against its own image
+        let c = mv(g, cl);
+        let d = sub(c, cl);
+        let d2 = dot(d, d);
+        let r = 2.0 * il - 1e-4;
+        if d2 > 1e-10 && d2 < r * r { continue 'rot; }
+        for &(s, x) in pieces {
+            let r = il + ctx.lib[s].inr - 1e-4;
+            // image of the link against the piece, and image of the piece against the link
+            let d = sub(c, x.t);
+            let d2 = dot(d, d);
+            if d2 > 1e-10 && d2 < r * r { continue 'rot; }
+            let d = sub(mv(g, x.t), cl);
+            let d2 = dot(d, d);
+            if d2 > 1e-10 && d2 < r * r { continue 'rot; }
+        }
+        return false;
+    }
+    true
+}
+
 fn dfs(ctx: &mut Ctx, w: &Xf, n: usize, depth: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
     test(ctx, w, n, pieces);
     if depth >= ctx.maxdepth { return; }
     let tab = ctx.tab;
     let list = if any_left == 0 { &tab.thru[n] } else { &tab.links[n] };
     for l in list {
-        pieces.push((l.solid, w.mul(&l.xp)));
+        let xl = w.mul(&l.xp);
+        if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; continue; }
+        pieces.push((l.solid, xl));
         ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[l.solid].name, l.g, l.k, l.h));
         dfs(ctx, &w.mul(&l.exit), l.hn, depth + 1, if l.through { any_left } else { any_left - 1 }, pieces);
         ctx.desc.pop();
@@ -300,6 +348,7 @@ fn main() {
     let (mut depth, mut any) = (2usize, 1usize);
     let mut threads = std::thread::available_parallelism().map_or(4, |n| n.get());
     let mut resume = false;
+    let (mut maxrad, mut maxpieces) = (f64::MAX, usize::MAX);
     let (mut minorder, mut near) = (24usize, 0usize);
     let mut range: Option<(usize, usize)> = None;
     let mut outdir = "out".to_string();
@@ -316,6 +365,8 @@ fn main() {
             "--near" => { near = args[i + 1].parse().unwrap(); i += 1; }
             "--seed-range" => { let v: Vec<usize> = args[i + 1].split(':').map(|x| x.parse().unwrap()).collect(); range = Some((v[0], v[1])); i += 1; }
             "--resume" => { resume = true; }
+            "--max-radius" => { maxrad = args[i + 1].parse().unwrap(); i += 1; }
+            "--max-pieces" => { maxpieces = args[i + 1].parse().unwrap(); i += 1; }
             "--out" => { outdir = args[i + 1].clone(); i += 1; }
             "--only" => { only = Some(args[i + 1].split(',').map(|s| s.to_string()).collect()); i += 1; }
             "--seeds" => { seeds_only = Some(args[i + 1].split(',').map(|s| s.to_string()).collect()); i += 1; }
@@ -344,7 +395,9 @@ fn main() {
     // dedupe signature and every completed seed, so --resume can skip finished seeds and append.
     std::fs::create_dir_all(format!("{}/off", outdir)).unwrap();
     let config = format!("config depth={} any={} min-group={} near={} only={} seeds={} range={:?} nseeds={}", depth, any, minorder, near,
-        only.as_ref().map_or("all".to_string(), |v| v.join(",")), seeds_only.as_ref().map_or("all".to_string(), |v| v.join(",")), range, seeds.len());
+        only.as_ref().map_or("all".to_string(), |v| v.join(",")), seeds_only.as_ref().map_or("all".to_string(), |v| v.join(",")), range, seeds.len())
+        + &(if maxrad < f64::MAX { format!(" max-radius={}", maxrad) } else { String::new() })
+        + &(if maxpieces < usize::MAX { format!(" max-pieces={}", maxpieces) } else { String::new() });
     let ckpath = format!("{}/checkpoint.txt", outdir);
     let mut done = vec![false; seeds.len()];
     let mut seen: HashSet<String> = HashSet::new();
@@ -410,11 +463,15 @@ fn main() {
                 }
                 let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
-                    pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, csbuf: Vec::new(), st: Default::default() };
+                    pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, csbuf: Vec::new(), st: Default::default(),
+                    axrot: Vec::new(), maxrad, pruned: 0 };
+                ctx.axrot = ctx.pdiv.iter().map(|&p| rot_sc(u, tab.sc[p])).collect();
+                ctx.scratch.max_pieces = maxpieces;
                 let mut pieces = vec![(ctx.a, Xf::ident())];
                 let w = s.frames[f][0];
                 dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces);
                 ctx.st.flush();
+                if ctx.pruned > 0 { *ctx.reasons.entry("pruned-subtrees").or_insert(0) += ctx.pruned; }
                 if ctx.st.quick_total > 0 { *ctx.reasons.entry("overlap-quick").or_insert(0) += ctx.st.quick_total; }
                 tests.fetch_add(ctx.tests, Ordering::Relaxed);
                 {

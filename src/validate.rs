@@ -185,6 +185,8 @@ pub struct Scratch {
     stab: Vec<(u32, u32)>,
     skip: Vec<bool>,
     elist: Vec<(f64, u32, u32)>,
+    /// --max-pieces: reject larger orbits outright (0 pieces allowed never happens; MAX = no limit)
+    pub max_pieces: usize,
 }
 
 /// m^T v
@@ -327,7 +329,7 @@ pub struct Res {
 /// Build the orbit of reps under the group in sc.grp, check it is a valid embedded closed surface,
 /// and measure it. Err(reason) on rejection.
 pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool, sc: &mut Scratch) -> Result<Res, &'static str> {
-    let Scratch { grp, ent, on, hull, dirs, facets, done, planes, stab, skip, elist } = sc;
+    let Scratch { grp, ent, on, hull, dirs, facets, done, planes, stab, skip, elist, max_pieces } = sc;
     let grp: &[Xf] = grp;
     // the centre strictly inside an off-centre piece means that piece meets its own images
     for &(s, x) in reps {
@@ -368,6 +370,7 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool
         }
         ent.truncate(k);
     }
+    if ent.len() > *max_pieces { return Err("too-big"); }
     // The (Q) screens run before the collision test: they are cheaper and reject almost everything.
     // (Q) pre-screen at the outermost vertex, which is certainly a hull vertex: its unit-distance
     // neighbours must span a cone containing every other vertex, or some hull edge there is not unit.
