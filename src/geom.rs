@@ -31,8 +31,9 @@ pub fn from_cols(a: V3, b: V3, c: V3) -> M3 {
     [[a[0], b[0], c[0]], [a[1], b[1], c[1]], [a[2], b[2], c[2]]]
 }
 /// Rotation by angle about unit axis u.
-pub fn rot(u: V3, ang: f64) -> M3 {
-    let (s, c) = ang.sin_cos();
+pub fn rot(u: V3, ang: f64) -> M3 { rot_sc(u, ang.sin_cos()) }
+/// Rotation about unit axis u from the angle's (sin, cos).
+pub fn rot_sc(u: V3, (s, c): (f64, f64)) -> M3 {
     let t = 1.0 - c;
     [
         [t * u[0] * u[0] + c, t * u[0] * u[1] - s * u[2], t * u[0] * u[2] + s * u[1]],
@@ -73,6 +74,7 @@ impl Xf {
     pub fn inv(&self) -> Xf { let rt = mt(&self.r); Xf { r: rt, t: scale(mv(&rt, self.t), -1.0) } }
     /// Rotation about the line through o with direction u.
     pub fn about(o: V3, u: V3, ang: f64) -> Xf { let r = rot(u, ang); Xf { r, t: sub(o, mv(&r, o)) } }
+    pub fn about_sc(o: V3, u: V3, sc: (f64, f64)) -> Xf { let r = rot_sc(u, sc); Xf { r, t: sub(o, mv(&r, o)) } }
 }
 
 /// Close a set of generators into a finite group (elements as Xf); None if it exceeds cap.
@@ -124,8 +126,9 @@ pub fn closure_recipe(gens: &[Xf], cap: usize) -> Option<Vec<(usize, usize)>> {
     }
     Some(rec)
 }
-pub fn from_recipe(gens: &[Xf], rec: &[(usize, usize)]) -> Vec<Xf> {
-    let mut el = vec![Xf::ident()];
+/// Rebuild the group from a recipe into a reused buffer.
+pub fn from_recipe(gens: &[Xf], rec: &[(usize, usize)], el: &mut Vec<Xf>) {
+    el.clear();
+    el.push(Xf::ident());
     for &(g, b) in &rec[1..] { let n = gens[g].mul(&el[b]); el.push(n); }
-    el
 }

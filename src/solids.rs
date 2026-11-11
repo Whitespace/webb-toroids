@@ -3,14 +3,20 @@ use crate::geom::*;
 pub struct Solid {
     pub name: String,
     pub v: Vec<V3>,
+    /// the same vertices as padded structure-of-arrays, for the vector kernels
+    pub soa: crate::simd::Soa,
     pub faces: Vec<Vec<usize>>,
     pub fnorm: Vec<V3>,
     pub edges: Vec<(usize, usize)>,
+    /// per edge, one further vertex from each of the two faces that meet there
+    pub ewing: Vec<(usize, usize)>,
     pub edirs: Vec<V3>,
     pub radius: f64,
     pub inr: f64,
     pub syms: Vec<M3>,
     pub fperm: Vec<Vec<usize>>,
+    /// eperm[k][e]: the edge that symmetry k takes edge e to
+    pub eperm: Vec<Vec<usize>>,
     pub axes: Vec<(V3, usize)>,
     /// frames[f][k]: canonical polygon frame -> face f with vertex k on +x, +z outward.
     pub frames: Vec<Vec<Xf>>,
@@ -49,6 +55,12 @@ impl Solid {
                 if a < b { edges.push((a, b)); }
             }
         }
+        // the vertex after the edge in each of its two faces
+        let wing = |a: usize, b: usize| -> usize {
+            for f in &faces { for i in 0..f.len() { if f[i] == a && f[(i + 1) % f.len()] == b { return f[(i + 2) % f.len()]; } } }
+            panic!("open edge");
+        };
+        let ewing: Vec<(usize, usize)> = edges.iter().map(|&(a, b)| (wing(a, b), wing(b, a))).collect();
         let mut edirs: Vec<V3> = Vec::new();
         for &(a, b) in &edges {
             let d = unit(sub(v[b], v[a]));
@@ -80,6 +92,10 @@ impl Solid {
             }
             fperm.push(fp);
         }
+        let eperm: Vec<Vec<usize>> = vperms.iter().map(|p| edges.iter().map(|&(a, b)| {
+            let img = (p[a].min(p[b]), p[a].max(p[b]));
+            edges.iter().position(|e| *e == img).unwrap()
+        }).collect()).collect();
         let axes = group_axes(&syms);
         let mut flags = Vec::new();
         for f in 0..faces.len() {
@@ -93,7 +109,8 @@ impl Solid {
                 if rep { flags.push((f, k)); }
             }
         }
-        Solid { name, v, faces, fnorm, edges, edirs, radius, inr, syms, fperm, axes, frames, flags }
+        let soa = crate::simd::Soa::new(&v);
+        Solid { name, v, soa, faces, fnorm, edges, ewing, edirs, radius, inr, syms, fperm, eperm, axes, frames, flags }
     }
 }
 

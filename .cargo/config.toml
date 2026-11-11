@@ -1,0 +1,4 @@
+# Use every vector extension the build machine has (NEON on Apple Silicon, AVX2/AVX-512 on x86-64).
+# The binary is then tied to this CPU family; remove this to build a portable one.
+[build]
+rustflags = ["-C", "target-cpu=native"]

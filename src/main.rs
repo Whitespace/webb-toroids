@@ -1,4 +1,5 @@
 mod geom;
+mod simd;
 mod solids;
 mod validate;
 use geom::*;
@@ -26,11 +27,12 @@ fn say(msg: String) {
 
 const FLIP: M3 = [[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]];
 
-struct AxEntry { solid: usize, face: usize, k: usize, order: usize, xp: Xf, p: V3, w: V3 }
+struct AxEntry { solid: usize, face: usize, k: usize, order: usize, xp: Xf, p: V3, w: V3, bq: [usize; 3], nbq: usize }
 #[derive(Clone)]
 struct Link { solid: usize, g: usize, k: usize, h: usize, hn: usize, xp: Xf, exit: Xf, through: bool }
 
-struct Tables { ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
+/// `axw[n]` holds the axis directions of `ax[n]` as padded structure-of-arrays for the vector dot product.
+struct Tables { axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
 
 fn build_tables(lib: &[Solid], active: &[bool]) -> Tables {
     let mut ax: Vec<Vec<AxEntry>> = (0..11).map(|_| Vec::new()).collect();
@@ -42,7 +44,12 @@ fn build_tables(lib: &[Solid], active: &[bool]) -> Tables {
             let fi = s.frames[g][k].inv();
             let xp = Xf { r: mmul(&FLIP, &fi.r), t: mv(&FLIP, fi.t) };
             for &(u, order) in &s.axes {
-                ax[n].push(AxEntry { solid: si, face: g, k, order, xp, p: xp.t, w: mv(&xp.r, u) });
+                // orders usable for B's rotation: the divisors >= 3, else the 2-fold
+                let mut bq = [2usize; 3];
+                let mut nbq = 0;
+                for d in divisors(order) { if d >= 3 { bq[nbq] = d; nbq += 1; } }
+                if nbq == 0 { nbq = 1; }
+                ax[n].push(AxEntry { solid: si, face: g, k, order, xp, p: xp.t, w: mv(&xp.r, u), bq, nbq });
             }
             for h in 0..s.faces.len() {
                 if h == g { continue; }
@@ -80,7 +87,14 @@ fn build_tables(lib: &[Solid], active: &[bool]) -> Tables {
     let mut cosbin = vec![false; 4098];
     for c in &cosset { let b = (c * 4096.0) as usize; for k in b.saturating_sub(1)..=(b + 1).min(4097) { cosbin[k] = true; } }
     let thru: Vec<Vec<Link>> = links.iter().map(|v| v.iter().filter(|l| l.through).cloned().collect()).collect();
-    Tables { ax, links, thru, cosset, pq, cosbin }
+    let axw: Vec<[Vec<f64>; 3]> = ax.iter().map(|v| {
+        let m = (v.len() + simd::W - 1) / simd::W * simd::W;
+        let col = |i: usize| -> Vec<f64> { (0..m).map(|k| if k < v.len() { v[k].w[i] } else { 0.0 }).collect() };
+        [col(0), col(1), col(2)]
+    }).collect();
+    let mut sc = [(0.0, 1.0); 6];
+    for k in 2..6 { sc[k] = (2.0 * std::f64::consts::PI / k as f64).sin_cos(); }
+    Tables { axw, sc, ax, links, thru, cosset, pq, cosbin }
 }
 
 struct Shared {
@@ -97,7 +111,6 @@ struct Ctx<'a> {
     tab: &'a Tables,
     a: usize,
     u: V3,
-    na: usize,
     maxdepth: usize,
     ordered: bool,
     minorder: usize,
@@ -108,7 +121,29 @@ struct Ctx<'a> {
     hits: u64,
     desc: Vec<String>,
     reasons: std::collections::HashMap<&'static str, u64>,
-    scratch: Vec<V3>,
+    scratch: validate::Scratch,
+    /// divisors >= 3 of the seed axis order
+    pdiv: Vec<usize>,
+    /// a centre s*u with s strictly inside this interval is strictly inside the seed piece
+    inside: (f64, f64),
+    csbuf: Vec<f64>,
+    st: Stats,
+}
+
+/// Per-thread counters, pushed to the shared atomics now and then so the hot path never
+/// touches a cache line another thread writes.
+#[derive(Default)]
+struct Stats { calls: u64, tests: u64, hits: u64, quick: u64, quick_total: u64, val_ns: u64, r: [u64; 12], rns: [u64; 12] }
+impl Stats {
+    fn flush(&mut self) {
+        G_TESTS.fetch_add(self.tests, Ordering::Relaxed);
+        G_HITS.fetch_add(self.hits, Ordering::Relaxed);
+        G_QUICK.fetch_add(self.quick, Ordering::Relaxed);
+        G_VAL_NS.fetch_add(self.val_ns, Ordering::Relaxed);
+        for k in 0..12 { if self.r[k] > 0 { G_R[k].fetch_add(self.r[k], Ordering::Relaxed); G_RNS[k].fetch_add(self.rns[k], Ordering::Relaxed); } }
+        self.quick_total += self.quick;
+        *self = Stats { calls: self.calls, quick_total: self.quick_total, ..Default::default() };
+    }
 }
 
 fn divisors(n: usize) -> Vec<usize> { [2usize, 3, 4, 5].iter().cloned().filter(|d| n % d == 0).collect() }
@@ -175,34 +210,43 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
     let o = wi.t;
     let u = mv(&wi.r, ctx.u);
     let tab = ctx.tab;
-    ctx.tests += tab.ax[n].len() as u64;
-    G_TESTS.fetch_add(tab.ax[n].len() as u64, Ordering::Relaxed);
-    for e in &tab.ax[n] {
-        let cs = dot(u, e.w);
+    let ents = &tab.ax[n];
+    ctx.tests += ents.len() as u64;
+    ctx.st.tests += ents.len() as u64;
+    ctx.st.calls += 1;
+    if ctx.st.calls & 0xfff == 0 { ctx.st.flush(); }
+    // cos of the angle between the seed axis and every candidate axis, in one vector pass
+    let mut buf = std::mem::take(&mut ctx.csbuf);
+    let [wx, wy, wz] = &tab.axw[n];
+    buf.resize(wx.len(), 0.0);
+    simd::dots(u, wx, wy, wz, &mut buf);
+    for i in 0..ents.len() {
+        let cs = buf[i];
         let c = cs.abs();
         if !tab.cosbin[(c * 4096.0) as usize] { continue; }
         if !tab.cosset.iter().any(|x| (x - c).abs() < 1e-7) { continue; }
+        let e = &ents[i];
         let nn = cross(u, e.w);
         let d = sub(e.p, o);
         if dot(d, nn).abs() > 1e-7 { continue; }
-        let bq: Vec<usize> = { let d: Vec<usize> = divisors(e.order).into_iter().filter(|x| *x >= 3).collect(); if d.is_empty() { vec![2] } else { d } };
+        let bq = &e.bq[..e.nbq];
         if ctx.ordered && bq[0] >= 3 && e.solid < ctx.a { continue; }
         let s = dot(cross(d, e.w), nn) / dot(nn, nn);
         let centre = scale(ctx.u, s);
-        let xb = w.mul(&e.xp);
         // a piece sitting on the centre gives a star of arms, not a shell; skip those
-        if s.abs() < 1e-6 || dist(centre, xb.t) < 1e-6 { continue; }
+        if s.abs() < 1e-6 || dist(centre, w.ap(e.p)) < 1e-6 { continue; }
         // centre strictly inside the seed piece: it would meet its own images
-        let sa = &ctx.lib[ctx.a];
-        if (0..sa.faces.len()).all(|f| dot(sa.fnorm[f], sub(centre, sa.v[sa.faces[f][0]])) < -1e-6) { continue; }
+        if s > ctx.inside.0 && s < ctx.inside.1 { continue; }
+        let xb = w.mul(&e.xp);
         let wb = mv(&w.r, e.w);
         pieces.push((e.solid, xb));
-        for p in divisors(ctx.na).into_iter().filter(|x| *x >= 3) {
-            for &q in &bq {
+        for pi in 0..ctx.pdiv.len() {
+            let p = ctx.pdiv[pi];
+            for &q in bq {
                 let rec = match tab.pq.iter().find(|x| x.0 == p && x.1 == q && (x.2 - cs).abs() < 1e-7 && x.3.len() >= ctx.minorder) { Some(x) => &x.3, None => continue };
                 ctx.hits += 1;
-                G_HITS.fetch_add(1, Ordering::Relaxed);
-                let gens = [Xf::about(centre, ctx.u, 2.0 * std::f64::consts::PI / p as f64), Xf::about(centre, wb, 2.0 * std::f64::consts::PI / q as f64)];
+                ctx.st.hits += 1;
+                let gens = [Xf::about_sc(centre, ctx.u, tab.sc[p]), Xf::about_sc(centre, wb, tab.sc[q])];
                 // quick reject: inscribed spheres of chain pieces against their images under the generators
                 let mut quick = false;
                 'q: for g in &gens {
@@ -216,13 +260,13 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
                         }
                     }
                 }
-                if quick { G_QUICK.fetch_add(1, Ordering::Relaxed); *ctx.reasons.entry("overlap-quick").or_insert(0) += 1; continue; }
+                if quick { ctx.st.quick += 1; continue; }
                 let t0 = std::time::Instant::now();
-                let grp = from_recipe(&gens, rec);
-                let res = validate::validate(ctx.lib, pieces, &grp, centre, ctx.near == 0, &mut ctx.scratch);
+                from_recipe(&gens, rec, &mut ctx.scratch.grp);
+                let res = validate::validate(ctx.lib, pieces, centre, ctx.near == 0, &mut ctx.scratch);
                 let ns = t0.elapsed().as_nanos() as u64;
-                G_VAL_NS.fetch_add(ns, Ordering::Relaxed);
-                if let Err(r) = &res { let k = RNAMES.iter().position(|x| x == r).unwrap_or(11); G_R[k].fetch_add(1, Ordering::Relaxed); G_RNS[k].fetch_add(ns, Ordering::Relaxed); }
+                ctx.st.val_ns += ns;
+                if let Err(r) = &res { let k = RNAMES.iter().position(|x| x == r).unwrap_or(11); ctx.st.r[k] += 1; ctx.st.rns[k] += ns; }
                 if res.is_ok() {
                     ctx.desc.push(format!("{}[f{} k{} ax{}]", ctx.lib[e.solid].name, e.face, e.k, e.order));
                     let reps: Vec<(usize, Xf)> = pieces.clone();
@@ -233,6 +277,7 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
         }
         pieces.pop();
     }
+    ctx.csbuf = buf;
 }
 
 fn dfs(ctx: &mut Ctx, w: &Xf, n: usize, depth: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
@@ -357,11 +402,20 @@ fn main() {
                 let i = todo[k];
                 let (si, ai, f) = seeds[i];
                 let s = &lib[si];
-                let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, na: s.axes[ai].1, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
-                    desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Vec::new() };
+                let u = s.axes[ai].0;
+                let mut inside = (f64::MIN, f64::MAX);
+                for f in 0..s.faces.len() {
+                    let (a, b) = (dot(s.fnorm[f], u), dot(s.fnorm[f], s.v[s.faces[f][0]]) - 1e-6);
+                    if a > 0.0 { inside.1 = inside.1.min(b / a); } else if a < 0.0 { inside.0 = inside.0.max(b / a); }
+                }
+                let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
+                    desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
+                    pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, csbuf: Vec::new(), st: Default::default() };
                 let mut pieces = vec![(ctx.a, Xf::ident())];
                 let w = s.frames[f][0];
                 dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces);
+                ctx.st.flush();
+                if ctx.st.quick_total > 0 { *ctx.reasons.entry("overlap-quick").or_insert(0) += ctx.st.quick_total; }
                 tests.fetch_add(ctx.tests, Ordering::Relaxed);
                 {
                     let mut sh = shared.lock().unwrap();

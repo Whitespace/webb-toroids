@@ -22,6 +22,12 @@ Without mise it needs a stable Rust toolchain (edition 2021, no crate dependenci
 The binary is `target/release/webb-toroids`. It reads `solids.txt` from the current directory
 (override with `--solids PATH`).
 
+`.cargo/config.toml` builds for the CPU of the build machine (`-C target-cpu=native`), so the
+binary is not portable to older CPUs; delete that file for a generic build. The hot loops in
+`src/simd.rs` are written as fixed-width lane blocks over structure-of-arrays vertex tables and
+are vectorised by the compiler: NEON on Apple Silicon, AVX2 or AVX-512 on x86-64. There are no
+intrinsics and no crate dependencies.
+
 The Python scripts need Python 3 with `numpy` and `scipy`.
 
 ## Run
@@ -81,6 +87,14 @@ axes meeting the seed's axis at an angle that occurs between axes of the octahed
 icosahedral group. The two axis rotations generate the group and the orbit of the chain is the
 candidate. Candidates are then checked for overlap (separating axes, f64 with 1e-7 tolerance),
 improper contact, closed manifoldness, genus, (A) and (Q).
+
+Almost all the time goes into rejecting candidates, so the cheap necessary conditions for (Q)
+run first and never build the candidate: the orbit is kept as piece centres, and each test
+turns its directions into a solid's own frame and runs on that solid's vertex table. In order:
+inscribed spheres overlapping; the cone of unit edges at the outermost vertex; then, edge by
+edge from the outside in, the hull faces through that edge must have unit sides. Edges that a
+piece's own symmetry carries onto one another are tested once. Only survivors are placed,
+collision-tested and meshed.
 
 ## Included runs
 
