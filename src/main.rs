@@ -34,7 +34,7 @@ struct Link { solid: usize, g: usize, k: usize, h: usize, hn: usize, xp: Xf, exi
 /// `axw[n]` holds the axis directions of `ax[n]` as padded structure-of-arrays for the vector dot product.
 struct Tables { axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
 
-fn build_tables(lib: &[Solid], active: &[bool]) -> Tables {
+fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -> Tables {
     let mut ax: Vec<Vec<AxEntry>> = (0..11).map(|_| Vec::new()).collect();
     let mut links: Vec<Vec<Link>> = (0..11).map(|_| Vec::new()).collect();
     for (si, s) in lib.iter().enumerate() {
@@ -52,8 +52,11 @@ fn build_tables(lib: &[Solid], active: &[bool]) -> Tables {
                 ax[n].push(AxEntry { solid: si, face: g, k, order, xp, p: xp.t, w: mv(&xp.r, u), bq, nbq });
             }
             for h in 0..s.faces.len() {
-                if h == g { continue; }
+                if h == g || !linkok[si] { continue; }
                 let through = dot(s.fnorm[h], s.fnorm[g]) < -1.0 + 1e-9;
+                // strut mode: the free ("through") links are only base to base through a prism or
+                // antiprism over this polygon; every other link counts against --any
+                let through = if struts { through && s.faces[h].len() == n && s.v.len() == 2 * n } else { through };
                 links[n].push(Link { solid: si, g, k, h, hn: s.faces[h].len(), xp, exit: xp.mul(&s.frames[h][0]), through });
             }
         }
@@ -355,6 +358,7 @@ fn main() {
     let mut outdir = "out".to_string();
     let mut only: Option<Vec<String>> = None;
     let mut seeds_only: Option<Vec<String>> = None;
+    let mut links_only: Option<Vec<String>> = None;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -370,6 +374,7 @@ fn main() {
             "--max-faces" => { maxfaces = args[i + 1].parse().unwrap(); i += 1; }
             "--max-pieces" => { maxpieces = args[i + 1].parse().unwrap(); i += 1; }
             "--out" => { outdir = args[i + 1].clone(); i += 1; }
+            "--links" => { links_only = Some(args[i + 1].split(',').map(|s| s.to_string()).collect()); i += 1; }
             "--only" => { only = Some(args[i + 1].split(',').map(|s| s.to_string()).collect()); i += 1; }
             "--seeds" => { seeds_only = Some(args[i + 1].split(',').map(|s| s.to_string()).collect()); i += 1; }
             x => panic!("unknown arg {}", x),
@@ -378,7 +383,16 @@ fn main() {
     }
     let lib = solids::load(&solids_path);
     let active: Vec<bool> = lib.iter().map(|s| only.as_ref().map_or(true, |o| o.contains(&s.name)) && s.faces.len() <= maxfaces).collect();
-    let tab = build_tables(&lib, &active);
+    // --links: which solids may be links. "struts" makes the free links prisms and antiprisms
+    // (cube and octahedron included) passed base to base, i.e. the straight struts of a
+    // node-and-strut frame. With --any K, up to K other pieces may sit in the chain as bends.
+    let struts = links_only.as_ref().map_or(false, |l| l.len() == 1 && l[0] == "struts");
+    let linkok: Vec<bool> = lib.iter().map(|s| match &links_only {
+        None => true,
+        Some(_) if struts => true,
+        Some(l) => l.contains(&s.name),
+    }).collect();
+    let tab = build_tables(&lib, &active, &linkok, struts);
     // seeds: (solid, axis, face rep under the axis stabiliser)
     let mut seeds: Vec<(usize, usize, usize)> = Vec::new();
     for (si, s) in lib.iter().enumerate() {
@@ -399,6 +413,7 @@ fn main() {
     let config = format!("config depth={} any={} min-group={} near={} only={} seeds={} range={:?} nseeds={}", depth, any, minorder, near,
         only.as_ref().map_or("all".to_string(), |v| v.join(",")), seeds_only.as_ref().map_or("all".to_string(), |v| v.join(",")), range, seeds.len())
         + &(if maxrad < f64::MAX { format!(" max-radius={}", maxrad) } else { String::new() })
+        + &links_only.as_ref().map_or(String::new(), |l| format!(" links={}", l.join(",")))
         + &(if maxfaces < usize::MAX { format!(" max-faces={}", maxfaces) } else { String::new() })
         + &(if maxpieces < usize::MAX { format!(" max-pieces={}", maxpieces) } else { String::new() });
     let ckpath = format!("{}/checkpoint.txt", outdir);

@@ -51,6 +51,7 @@ Directly:
 | `--any K` | how many of those links may be arbitrary solids; the rest must be entered and left through antiparallel faces | 1 |
 | `--min-group N` | 24 keeps octahedral and icosahedral, 60 icosahedral only | 24 |
 | `--near N` | also keep results with up to N hull edges missing (turns off the pre-screen) | 0 |
+| `--links a,b,c` | solids allowed as links; `struts` makes the free links prisms and antiprisms (cube and octahedron included) passed base to base, so chains are straight struts; `--any K` then allows K other pieces in the chain as bends. End pieces are not restricted | all |
 | `--max-faces N` | use only solids with at most N faces | all |
 | `--max-radius R` | drop chains with a piece centre further than R edge lengths from the seed axis or the centre (Webb's toroid: 6.2) | none |
 | `--max-pieces N` | reject candidates with more than N pieces (Webb's toroid: 152) | none |
@@ -111,4 +112,7 @@ collision-tested and meshed.
 - `runs/d2a2-f14-r6.2-p152`: two bent links on the 47 solids with at most 14 faces (`mise run search 2 2 --max-faces 14
   --max-radius 6.2 --max-pieces 152`). Complete, 120 results, all pass `scripts/check.py`.
 - `runs/d3a0-r6.2-p152`: complete (finished on a second machine), 33 results, the same as `runs/d2`.
+- `runs/d8a0-struts-r6.2-p152`: straight struts of up to 8 prisms and antiprisms between any two end pieces
+  (`mise run search 8 0 --links struts --max-radius 6.2 --max-pieces 152`). Complete in seconds, 14 results, all already in
+  `runs/d2`. Struts up to 12 long with radius up to 12 and no piece limit give the same 14.
 - `runs/webb4`: Webb's four piece types only, used as the sanity test.

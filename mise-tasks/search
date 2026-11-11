@@ -14,6 +14,7 @@ for a in "$@"; do
   case "$prev" in
     --min-group) name="${name}-g${a}" ;;
     --near) name="${name}-near${a}" ;;
+    --links) if [ "$a" = struts ]; then name="${name}-struts"; else name="${name}-l$(printf '%s' "$a" | cksum | cut -d' ' -f1)"; fi ;;
     --max-faces) name="${name}-f${a}" ;;
     --max-radius) name="${name}-r${a}" ;;
     --max-pieces) name="${name}-p${a}" ;;
