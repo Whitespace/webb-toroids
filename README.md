@@ -41,6 +41,10 @@ The task builds first, names the output directory from its arguments, uses every
 resumes: stop it with Ctrl-C and run the same command again to continue. Progress goes to the
 terminal and to `run.log` in the output directory.
 
+Add `--push` to commit the run's directory and push it when the run completes (`--commit` to
+commit only; `SEARCH_PUSH=1` in the environment does the same as `--push`). A run that was
+interrupted is not committed.
+
 Directly:
 
     target/release/webb-toroids --depth 1 --any 0 --out runs/t1
@@ -83,6 +87,36 @@ antiprisms up to 10 sides, with mirror images of the chiral ones (127 in all), a
 `scripts/prep.py DATA_DIR solids.txt` regenerates it from per-solid JSON files (vertices, edges,
 faces, as in tesseralis/polyhedra-viewer) and polishes the coordinates to about 1e-14.
 
+## Background queue
+
+Instead of running jobs by hand, a worker can chip away at a backlog on a couple of cores:
+
+    brew install terminal-notifier   # optional, for notifications with a thumbnail
+    mise run queue:install           # macOS: installs and starts a launchd agent, restarts at login
+    mise run queue:status            # the queue, what is running, recent log
+    mise run queue:add -- 4 1 --links struts --max-radius 6.2 --max-pieces 152
+    mise run queue:uninstall         # stop it; the running job resumes next time
+    mise run queue:run               # or run the worker in the foreground, any OS
+
+`queue/jobs.txt` is the backlog, one `mise run search` argument list per line, worked top to
+bottom. It is tracked in git and the worker pulls before each job, so jobs pushed to the repo
+are picked up without touching the machine. A job is finished once its `run.log` has a `done`
+line; finished runs are committed locally. Everything is resumable: stopping the worker, a
+reboot or a crash loses at most the seeds in flight.
+
+Settings go in `queue/config.local` (see `queue/config.example`): `THREADS` (default 2),
+`BACKGROUND` (macOS background QoS through `taskpolicy -b`, which keeps the work on the
+efficiency cores), `PULL`, `PUSH` (push finished runs, off by default), `NOTIFY`.
+
+While a job runs, `scripts/queue_notify.py` looks once a minute for results that no other run
+under `runs/` has, and posts one desktop notification for them with a thumbnail of the simplest
+(`scripts/render.py`, a small numpy rasteriser). Thumbnails and logs are in `queue/state/`.
+
+Not tested on macOS by the author of this section: the launchd agent, `taskpolicy` and the
+notification itself. The worker loop, naming, novelty check, thumbnails and commits were
+tested on Linux. If the repository lives under Documents, Desktop or Downloads, macOS may
+block a launchd agent from reading it until bash is given Full Disk Access.
+
 ## How it works
 
 A seed solid sits on one of its own rotation axes of order 3, 4 or 5. A chain of solids glued
@@ -115,4 +149,6 @@ collision-tested and meshed.
 - `runs/d8a0-struts-r6.2-p152`: straight struts of up to 8 prisms and antiprisms between any two end pieces
   (`mise run search 8 0 --links struts --max-radius 6.2 --max-pieces 152`). Complete in seconds, 14 results, all already in
   `runs/d2`. Struts up to 12 long with radius up to 12 and no piece limit give the same 14.
+- `runs/d3a1-struts-r6.2-p152`: straight struts with one bend piece. Complete, 148 results, 66 not in any other
+  run, none with a new hull. `scripts/check.py` agrees on 147 and disputes 000038 (the same shape it disputes in `d2a2-c31`).
 - `runs/webb4`: Webb's four piece types only, used as the sanity test.

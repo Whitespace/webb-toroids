@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#MISE description="Append a job to the queue: mise run queue:add -- DEPTH ANY [flags]"
+set -euo pipefail
+[ "$#" -ge 2 ] || { echo "usage: mise run queue:add -- DEPTH ANY [flags]" >&2; exit 2; }
+echo "$*" >> queue/jobs.txt
+echo "queued: $*  ->  runs/$(scripts/runname.sh "$@")"

@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#MISE description="Install and start the queue worker as a launchd agent (macOS); it then runs at every login"
+#MISE depends=["build", "pydeps"]
+set -euo pipefail
+[ "$(uname)" = Darwin ] || { echo "launchd is macOS only; use: mise run queue:run" >&2; exit 1; }
+label="com.webb-toroids.queue"
+repo="$(pwd)"
+plist="$HOME/Library/LaunchAgents/$label.plist"
+mkdir -p "$HOME/Library/LaunchAgents" queue/state
+command -v terminal-notifier >/dev/null 2>&1 || echo "note: 'brew install terminal-notifier' gives notifications with a thumbnail; without it they are text only" >&2
+# launchd starts jobs with a bare PATH, so the PATH of this mise task (cargo, the venv, Homebrew) is written into the agent
+cat > "$plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$label</string>
+  <key>ProgramArguments</key>
+  <array><string>/bin/bash</string><string>$repo/scripts/queue-worker.sh</string></array>
+  <key>WorkingDirectory</key><string>$repo</string>
+  <key>EnvironmentVariables</key>
+  <dict><key>PATH</key><string>$PATH</string><key>HOME</key><string>$HOME</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ProcessType</key><string>Background</string>
+  <key>LowPriorityIO</key><true/>
+  <key>ThrottleInterval</key><integer>60</integer>
+  <key>StandardOutPath</key><string>$repo/queue/state/worker.log</string>
+  <key>StandardErrorPath</key><string>$repo/queue/state/worker.log</string>
+</dict>
+</plist>
+PLIST
+launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$plist"
+echo "installed $plist"
+echo "status: mise run queue:status    stop and remove: mise run queue:uninstall"

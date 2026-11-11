@@ -1,0 +1,11 @@
+# Backlog for the background worker (scripts/queue-worker.sh), one job per line, run top to bottom.
+# A line is the arguments of `mise run search`: DEPTH ANY [flags]. Output goes to the same
+# runs/<name> directory that `mise run search` would use, and a job counts as finished once its
+# run.log has a "done" line, so finished or hand-run jobs are skipped.
+# Add jobs with `mise run queue:add -- 4 1 --links struts ...` or by editing this file.
+
+4 1 --links struts --max-radius 6.2 --max-pieces 152
+2 2 --max-faces 20 --max-radius 6.2 --max-pieces 152
+5 1 --links struts --max-radius 6.2 --max-pieces 152
+3 2 --links struts --max-faces 14 --max-radius 6.2 --max-pieces 152
+2 2 --max-faces 32 --max-radius 6.2 --max-pieces 152

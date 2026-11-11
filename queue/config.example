@@ -1,0 +1,8 @@
+# Copy to queue/config.local (not tracked) and edit. These are the defaults.
+THREADS=2          # cores to use
+BACKGROUND=1       # 1: macOS background QoS (efficiency cores, quiet fans); 0: plain `nice`
+PULL=1             # git pull before each job
+PUSH=0             # 1: push finished runs to origin
+POLL=60            # seconds between checks for new results
+IDLE_SLEEP=900     # seconds between checks of an empty queue
+NOTIFY=1           # 0: no desktop notifications

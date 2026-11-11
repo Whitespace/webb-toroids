@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Stop the queue worker and remove its launchd agent (the running job resumes next time)"
+set -euo pipefail
+label="com.webb-toroids.queue"
+plist="$HOME/Library/LaunchAgents/$label.plist"
+launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
+if [ -f "$plist" ]; then mv "$plist" "$plist.removed"; echo "stopped; agent file moved to $plist.removed"; else echo "stopped; no agent file found"; fi

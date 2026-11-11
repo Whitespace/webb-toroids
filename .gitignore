@@ -29,3 +29,7 @@ __pycache__
 
 # generated viewer page
 viewer/index.html
+
+# queue worker state and local settings
+queue/state
+queue/config.local

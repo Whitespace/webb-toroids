@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Run the queue worker in the foreground (Ctrl-C stops it; jobs resume later)"
+#MISE depends=["build", "pydeps"]
+exec scripts/queue-worker.sh

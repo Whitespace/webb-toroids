@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#MISE description="Show the queue, what is running, and the worker's recent log"
+set -uo pipefail
+label="com.webb-toroids.queue"
+if [ "$(uname)" = Darwin ]; then
+  if launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1; then echo "agent: loaded"; else echo "agent: not loaded (mise run queue:install)"; fi
+fi
+cur="$(cat queue/state/current 2>/dev/null || true)"
+while IFS= read -r line || [ -n "$line" ]; do
+  line="${line%%#*}"
+  [ -z "${line//[[:space:]]/}" ] && continue
+  # shellcheck disable=SC2086
+  name="$(scripts/runname.sh $line)"
+  if grep -q '^done ' "runs/$name/run.log" 2>/dev/null; then mark="done   "
+  elif [ "$name" = "$cur" ]; then mark="RUNNING"
+  elif [ -f "runs/$name/checkpoint.txt" ]; then mark="partial"
+  else mark="queued "; fi
+  extra=""
+  if [ -f "runs/$name/checkpoint.txt" ]; then
+    extra="  seeds $(grep -c '^seed ' "runs/$name/checkpoint.txt")/$(sed -n '1s/.*nseeds=\([0-9]*\).*/\1/p' "runs/$name/checkpoint.txt")  results $(($(wc -l < "runs/$name/results.tsv") - 1))"
+  fi
+  echo "$mark  $name$extra"
+done < queue/jobs.txt
+if [ -f queue/state/worker.log ]; then echo "--- worker log"; tail -n 8 queue/state/worker.log; fi
