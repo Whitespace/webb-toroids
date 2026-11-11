@@ -106,4 +106,7 @@ collision-tested and meshed.
 - `runs/t2`: two through-links, all solids. Stopped after 90 of 1847 seeds.
 - `runs/d3a0-r6.2-p152`: three through-links, all solids, `--max-radius 6.2 --max-pieces 152`. Stopped at 1731 of
   1847 seeds; continue with `mise run search 3 0 --max-radius 6.2 --max-pieces 152`. Same 33 results as `runs/d2` so far.
+- `runs/d2a2-c31`: two arbitrary (bent) links on the 31-solid set of `t2c`, `--max-radius 6.2 --max-pieces 152`.
+  Complete, 79 results. `scripts/check.py` agrees on 78; it reports 4 missing hull edges on 000019, where it splits 2 of
+  the 30 octagonal hull faces, which looks like a hull-merging artefact and is not resolved.
 - `runs/webb4`: Webb's four piece types only, used as the sanity test.

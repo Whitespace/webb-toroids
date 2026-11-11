@@ -1,0 +1,34 @@
+config depth=2 any=2 min-group=24 near=0 only=pentagonal-rotunda,pentagonal-prism,pentagonal-antiprism,tridiminished-icosahedron,augmented-tridiminished-icosahedron,metabidiminished-icosahedron,pentagonal-pyramid,gyroelongated-pentagonal-pyramid,elongated-pentagonal-pyramid,pentagonal-cupola,icosidodecahedron,dodecahedron,icosahedron,decagonal-prism,decagonal-antiprism,triangular-prism,cube,octahedron,tetrahedron,square-pyramid,square-cupola,triangular-cupola,square-antiprism,cuboctahedron,hexagonal-prism,octagonal-prism,truncated-tetrahedron,gyrobifastigium,elongated-square-pyramid,bilunabirotunda,triangular-hebesphenorotunda seeds=all range=None nseeds=297 max-radius=6.2 max-pieces=152
+through links [0, 0, 0, 40, 16, 11, 7, 0, 3, 0, 6]
+solids 127 seeds 297 (0 already done) threads 4 axtab [0, 0, 0, 276, 150, 119, 25, 0, 11, 0, 26] links [0, 0, 0, 1216, 432, 491, 73, 0, 27, 0, 86]
+seeds done 10/297 2s
+seeds done 20/297 3s
+seeds done 30/297 5s
+seeds done 40/297 6s
+seeds done 50/297 8s
+seeds done 60/297 9s
+seeds done 70/297 11s
+seeds done 80/297 13s
+seeds done 90/297 15s
+seeds done 100/297 17s
+seeds done 110/297 19s
+seeds done 120/297 21s
+seeds done 130/297 23s
+seeds done 140/297 25s
+seeds done 150/297 27s
+seeds done 160/297 28s
+seeds done 170/297 30s
+seeds done 180/297 32s
+seeds done 190/297 34s
+seeds done 200/297 36s
+seeds done 210/297 38s
+seeds done 220/297 40s
+seeds done 230/297 41s
+seeds done 240/297 42s
+seeds done 250/297 44s
+seeds done 260/297 46s
+seeds done 270/297 47s
+seeds done 280/297 48s
+seeds done 290/297 49s
+seeds done 297/297 50s
+done 49.8s tests 35677701241 hits 41078283 unique 79 reasons {"disconnected": 117, "overlap-sphere": 9364276, "overlap-chain": 2529, "overlap": 4339, "nonmanifold": 61, "overlap-quick": 28192504, "pinch": 26, "valid": 403, "q-proxy": 116161, "q-prescreen": 2774807, "genus0": 55, "RAQT": 393, "pruned-subtrees": 39682289, "overlap-centre": 209497, "contact": 8, "too-big": 413500}
