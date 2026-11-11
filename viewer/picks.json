@@ -1,5 +1,68 @@
 [
  {
+  "run": "runs/d2a2-c31",
+  "id": 56,
+  "grp": "New from bent chains",
+  "name": "Two cupolas and pyramids",
+  "note": "6 square cupolas, 6 square pyramids and 8 triangular cupolas: 20 pieces and 94 faces, the smallest result so far. Every hull face is regular, so it is Stewart-style rather than Webb-style."
+ },
+ {
+  "run": "runs/d2a2-c31",
+  "id": 47,
+  "grp": "New from bent chains",
+  "name": "Cubes, cupolas, pyramids",
+  "note": "12 cubes, 6 square cupolas and 6 square pyramids. Genus 7, 24 pieces, 102 faces, regular hull."
+ },
+ {
+  "run": "runs/d2a2-c31",
+  "id": 61,
+  "grp": "New from bent chains",
+  "name": "Cupolas, pyramids, tetrahedra",
+  "note": "6 square cupolas, 6 square pyramids, 8 tetrahedra and 8 triangular cupolas. 28 pieces, 110 faces, regular hull."
+ },
+ {
+  "run": "runs/d2a2-c31",
+  "id": 73,
+  "grp": "New from bent chains",
+  "name": "Pyramid, prism, cupola with tetrahedra",
+  "note": "6 square pyramids, 8 tetrahedra, 8 triangular cupolas and 24 triangular prisms. 134 faces, irregular hull."
+ },
+ {
+  "run": "runs/d2a2-c31",
+  "id": 62,
+  "grp": "New from bent chains",
+  "name": "Cupola, prism, tetrahedron with pyramids",
+  "note": "6 square cupolas, 6 square pyramids, 8 tetrahedra and 24 triangular prisms. 134 faces, irregular hull."
+ },
+ {
+  "run": "runs/d2a2-c31",
+  "id": 67,
+  "grp": "New from bent chains",
+  "name": "Two cupolas, prisms, tetrahedra",
+  "note": "6 square cupolas, 8 tetrahedra, 8 triangular cupolas and 24 triangular prisms. The roundest of the new ones (0.907), 164 faces."
+ },
+ {
+  "run": "runs/d2a2-c31",
+  "id": 31,
+  "grp": "New from bent chains",
+  "name": "Octahedra and 54 pyramids",
+  "note": "8 octahedra and 54 square pyramids. 190 faces, irregular hull."
+ },
+ {
+  "run": "runs/d2a2-c31",
+  "id": 35,
+  "grp": "New from bent chains",
+  "name": "Antiprism shell with tetrahedra",
+  "note": "12 pentagonal rotundas, 20 tridiminished icosahedra, 60 pentagonal antiprisms and 20 tetrahedra. Icosahedral, genus 29, 884 faces; same radius as the antiprism-only shell."
+ },
+ {
+  "run": "runs/d2a2-c31",
+  "id": 77,
+  "grp": "New from bent chains",
+  "name": "Antiprism shell with prisms",
+  "note": "12 pentagonal rotundas, 20 tridiminished icosahedra, 60 pentagonal antiprisms and 12 pentagonal prisms. Icosahedral, genus 29, 904 faces."
+ },
+ {
   "run": "runs/webb4",
   "id": 2,
   "grp": "Icosahedral",
