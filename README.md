@@ -51,6 +51,7 @@ Directly:
 | `--any K` | how many of those links may be arbitrary solids; the rest must be entered and left through antiparallel faces | 1 |
 | `--min-group N` | 24 keeps octahedral and icosahedral, 60 icosahedral only | 24 |
 | `--near N` | also keep results with up to N hull edges missing (turns off the pre-screen) | 0 |
+| `--max-faces N` | use only solids with at most N faces | all |
 | `--max-radius R` | drop chains with a piece centre further than R edge lengths from the seed axis or the centre (Webb's toroid: 6.2) | none |
 | `--max-pieces N` | reject candidates with more than N pieces (Webb's toroid: 152) | none |
 | `--only a,b,c` | restrict the library to these solids (names as in `solids.txt`) | all |
@@ -104,9 +105,10 @@ collision-tested and meshed.
 - `runs/t2c`: two through-links on a hand-picked set of 31 solids. Complete. Run with `--depth 2 --any 0 --only`
   `pentagonal-rotunda,pentagonal-prism,pentagonal-antiprism,tridiminished-icosahedron,augmented-tridiminished-icosahedron,metabidiminished-icosahedron,pentagonal-pyramid,gyroelongated-pentagonal-pyramid,elongated-pentagonal-pyramid,pentagonal-cupola,icosidodecahedron,dodecahedron,icosahedron,decagonal-prism,decagonal-antiprism,triangular-prism,cube,octahedron,tetrahedron,square-pyramid,square-cupola,triangular-cupola,square-antiprism,cuboctahedron,hexagonal-prism,octagonal-prism,truncated-tetrahedron,gyrobifastigium,elongated-square-pyramid,bilunabirotunda,triangular-hebesphenorotunda`
 - `runs/t2`: two through-links, all solids. Stopped after 90 of 1847 seeds.
-- `runs/d3a0-r6.2-p152`: three through-links, all solids, `--max-radius 6.2 --max-pieces 152`. Stopped at 1731 of
-  1847 seeds; continue with `mise run search 3 0 --max-radius 6.2 --max-pieces 152`. Same 33 results as `runs/d2` so far.
 - `runs/d2a2-c31`: two arbitrary (bent) links on the 31-solid set of `t2c`, `--max-radius 6.2 --max-pieces 152`.
   Complete, 79 results. `scripts/check.py` agrees on 78; it reports 4 missing hull edges on 000019, where it splits 2 of
   the 30 octagonal hull faces, which looks like a hull-merging artefact and is not resolved.
+- `runs/d2a2-f14-r6.2-p152`: two bent links on the 47 solids with at most 14 faces (`mise run search 2 2 --max-faces 14
+  --max-radius 6.2 --max-pieces 152`). Complete, 120 results, all pass `scripts/check.py`.
+- `runs/d3a0-r6.2-p152`: complete (finished on a second machine), 33 results, the same as `runs/d2`.
 - `runs/webb4`: Webb's four piece types only, used as the sanity test.

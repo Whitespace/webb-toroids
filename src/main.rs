@@ -349,6 +349,7 @@ fn main() {
     let mut threads = std::thread::available_parallelism().map_or(4, |n| n.get());
     let mut resume = false;
     let (mut maxrad, mut maxpieces) = (f64::MAX, usize::MAX);
+    let mut maxfaces = usize::MAX;
     let (mut minorder, mut near) = (24usize, 0usize);
     let mut range: Option<(usize, usize)> = None;
     let mut outdir = "out".to_string();
@@ -366,6 +367,7 @@ fn main() {
             "--seed-range" => { let v: Vec<usize> = args[i + 1].split(':').map(|x| x.parse().unwrap()).collect(); range = Some((v[0], v[1])); i += 1; }
             "--resume" => { resume = true; }
             "--max-radius" => { maxrad = args[i + 1].parse().unwrap(); i += 1; }
+            "--max-faces" => { maxfaces = args[i + 1].parse().unwrap(); i += 1; }
             "--max-pieces" => { maxpieces = args[i + 1].parse().unwrap(); i += 1; }
             "--out" => { outdir = args[i + 1].clone(); i += 1; }
             "--only" => { only = Some(args[i + 1].split(',').map(|s| s.to_string()).collect()); i += 1; }
@@ -375,7 +377,7 @@ fn main() {
         i += 1;
     }
     let lib = solids::load(&solids_path);
-    let active: Vec<bool> = lib.iter().map(|s| only.as_ref().map_or(true, |o| o.contains(&s.name))).collect();
+    let active: Vec<bool> = lib.iter().map(|s| only.as_ref().map_or(true, |o| o.contains(&s.name)) && s.faces.len() <= maxfaces).collect();
     let tab = build_tables(&lib, &active);
     // seeds: (solid, axis, face rep under the axis stabiliser)
     let mut seeds: Vec<(usize, usize, usize)> = Vec::new();
@@ -397,6 +399,7 @@ fn main() {
     let config = format!("config depth={} any={} min-group={} near={} only={} seeds={} range={:?} nseeds={}", depth, any, minorder, near,
         only.as_ref().map_or("all".to_string(), |v| v.join(",")), seeds_only.as_ref().map_or("all".to_string(), |v| v.join(",")), range, seeds.len())
         + &(if maxrad < f64::MAX { format!(" max-radius={}", maxrad) } else { String::new() })
+        + &(if maxfaces < usize::MAX { format!(" max-faces={}", maxfaces) } else { String::new() })
         + &(if maxpieces < usize::MAX { format!(" max-pieces={}", maxpieces) } else { String::new() });
     let ckpath = format!("{}/checkpoint.txt", outdir);
     let mut done = vec![false; seeds.len()];

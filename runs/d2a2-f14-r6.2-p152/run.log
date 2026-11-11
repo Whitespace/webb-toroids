@@ -1,0 +1,26 @@
+config depth=2 any=2 min-group=24 near=0 only=all seeds=all range=None nseeds=217 max-radius=6.2 max-faces=14 max-pieces=152
+through links [0, 0, 0, 49, 43, 19, 31, 0, 5, 0, 3]
+solids 127 seeds 217 (0 already done) threads 4 axtab [0, 0, 0, 436, 268, 86, 85, 0, 37, 0, 13] links [0, 0, 0, 2245, 1203, 359, 355, 0, 53, 0, 33]
+seeds done 10/217 14s
+seeds done 20/217 21s
+seeds done 30/217 30s
+seeds done 40/217 38s
+seeds done 50/217 40s
+seeds done 60/217 41s
+seeds done 70/217 43s
+seeds done 80/217 48s
+seeds done 90/217 57s
+seeds done 100/217 64s
+seeds done 110/217 71s
+seeds done 120/217 78s
+seeds done 130/217 86s
+seeds done 140/217 93s
+seeds done 150/217 98s
+seeds done 160/217 104s
+seeds done 170/217 108s
+seeds done 180/217 111s
+seeds done 190/217 115s
+seeds done 200/217 120s
+seeds done 210/217 126s
+seeds done 217/217 130s
+done 130.0s tests 108486680142 hits 43832981 unique 120 reasons {"overlap-centre": 604352, "too-big": 411069, "genus0": 55, "q-prescreen": 11752173, "contact": 10, "disconnected": 125, "pruned-subtrees": 73989955, "overlap-chain": 1585, "pinch": 108, "valid": 794, "nonmanifold": 89, "RAQT": 671, "overlap-quick": 24265096, "q-proxy": 496905, "overlap-sphere": 6297463, "overlap": 3157}
