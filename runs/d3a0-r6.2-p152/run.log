@@ -1612,3 +1612,51 @@ watch 7183s seeds 1731/1847 tests 6089093964936 hits 935476379 quick 344513738 v
   overlap-centre n=1921438 cpu=1.0s | overlap-sphere n=581905190 cpu=617.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=6902925 cpu=27.1s | q-proxy n=154566 cpu=1.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s | other n=78397 cpu=0.9s
 watch 7193s seeds 1731/1847 tests 6096857336525 hits 935476991 quick 344514350 validate_cpu_s 648.4
   overlap-centre n=1921438 cpu=1.0s | overlap-sphere n=581905190 cpu=617.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=6902925 cpu=27.1s | q-proxy n=154566 cpu=1.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s | other n=78397 cpu=0.9s
+resuming: config depth=3 any=0 min-group=24 near=0 only=all seeds=all range=None nseeds=1847 max-radius=6.2 max-pieces=152
+through links [0, 0, 0, 259, 384, 409, 43, 0, 26, 0, 196]
+solids 127 seeds 1847 (1731 already done) threads 16 axtab [0, 0, 0, 2452, 1543, 813, 247, 0, 106, 0, 356] links [0, 0, 0, 34405, 36408, 20639, 697, 0, 530, 0, 9136]
+seeds done 1740/1847 0s
+seeds done 1750/1847 1s
+seeds done 1760/1847 1s
+seeds done 1770/1847 2s
+seeds done 1780/1847 4s
+seeds done 1790/1847 8s
+watch 10s seeds 1792/1847 tests 51741161478 hits 1813882 quick 1058010 validate_cpu_s 0.5
+  overlap-centre n=10164 cpu=0.0s | overlap-sphere n=710818 cpu=0.5s | q-prescreen n=34729 cpu=0.1s | q-proxy n=161 cpu=0.0s
+watch 20s seeds 1799/1847 tests 97948199361 hits 2903682 quick 1779011 validate_cpu_s 0.8
+  overlap-centre n=32112 cpu=0.0s | overlap-sphere n=1050517 cpu=0.6s | q-prescreen n=41666 cpu=0.1s | q-proxy n=370 cpu=0.0s | other n=6 cpu=0.0s
+seeds done 1800/1847 21s
+seeds done 1810/1847 28s
+watch 31s seeds 1814/1847 tests 143845199955 hits 6701374 quick 4344041 validate_cpu_s 1.6
+  overlap-centre n=106676 cpu=0.0s | overlap-sphere n=2172657 cpu=1.3s | q-prescreen n=77072 cpu=0.2s | q-proxy n=906 cpu=0.0s | other n=22 cpu=0.0s
+seeds done 1820/1847 35s
+watch 41s seeds 1825/1847 tests 183645045811 hits 8609475 quick 5681428 validate_cpu_s 2.0
+  overlap-centre n=138459 cpu=0.1s | overlap-sphere n=2696876 cpu=1.7s | overlap n=1 cpu=0.0s | q-prescreen n=91688 cpu=0.2s | q-proxy n=1115 cpu=0.0s | other n=37 cpu=0.0s
+seeds done 1830/1847 43s
+watch 51s seeds 1838/1847 tests 223379118483 hits 9546844 quick 6477905 validate_cpu_s 2.1
+  overlap-centre n=144585 cpu=0.1s | overlap-sphere n=2822104 cpu=1.8s | overlap n=1 cpu=0.0s | q-prescreen n=101000 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 61s seeds 1838/1847 tests 256782250088 hits 9858524 quick 6654626 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=2955483 cpu=1.8s | overlap n=1 cpu=0.0s | q-prescreen n=102448 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 71s seeds 1839/1847 tests 289519052788 hits 10244599 quick 7021282 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=2974718 cpu=1.8s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 82s seeds 1839/1847 tests 323071390504 hits 11112162 quick 7867840 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=2995723 cpu=1.9s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 92s seeds 1839/1847 tests 356332987760 hits 11679357 quick 8431104 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=2999654 cpu=1.9s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 102s seeds 1839/1847 tests 391229849098 hits 11839713 quick 8590108 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=3001006 cpu=1.9s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 112s seeds 1839/1847 tests 423815989991 hits 11883171 quick 8633214 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=3001358 cpu=1.9s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 122s seeds 1839/1847 tests 456333244630 hits 11885835 quick 8635878 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=3001358 cpu=1.9s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 132s seeds 1839/1847 tests 489300973077 hits 11888499 quick 8638542 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=3001358 cpu=1.9s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 142s seeds 1839/1847 tests 522406349013 hits 12089275 quick 8837622 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=3003054 cpu=1.9s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+watch 153s seeds 1839/1847 tests 560355176476 hits 13153984 quick 9899545 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=3005840 cpu=1.9s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+seeds done 1840/1847 160s
+watch 163s seeds 1845/1847 tests 590623699034 hits 13382509 quick 10125806 validate_cpu_s 2.2
+  overlap-centre n=144717 cpu=0.1s | overlap-sphere n=3008104 cpu=1.9s | overlap n=1 cpu=0.0s | q-prescreen n=102632 cpu=0.3s | q-proxy n=1148 cpu=0.0s | other n=101 cpu=0.0s
+seeds done 1847/1847 163s
+done 163.3s tests 591239957158 hits 13384401 unique 33 reasons {"overlap-quick": 10127324, "pruned-subtrees": 538865104, "q-prescreen": 102632, "too-big": 101, "overlap-sphere": 3008478, "q-proxy": 1148, "overlap-centre": 144717, "overlap": 1} (counts cover this session only; unique is the total)
