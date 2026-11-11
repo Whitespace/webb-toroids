@@ -104,4 +104,6 @@ collision-tested and meshed.
 - `runs/t2c`: two through-links on a hand-picked set of 31 solids. Complete. Run with `--depth 2 --any 0 --only`
   `pentagonal-rotunda,pentagonal-prism,pentagonal-antiprism,tridiminished-icosahedron,augmented-tridiminished-icosahedron,metabidiminished-icosahedron,pentagonal-pyramid,gyroelongated-pentagonal-pyramid,elongated-pentagonal-pyramid,pentagonal-cupola,icosidodecahedron,dodecahedron,icosahedron,decagonal-prism,decagonal-antiprism,triangular-prism,cube,octahedron,tetrahedron,square-pyramid,square-cupola,triangular-cupola,square-antiprism,cuboctahedron,hexagonal-prism,octagonal-prism,truncated-tetrahedron,gyrobifastigium,elongated-square-pyramid,bilunabirotunda,triangular-hebesphenorotunda`
 - `runs/t2`: two through-links, all solids. Stopped after 90 of 1847 seeds.
+- `runs/d3a0-r6.2-p152`: three through-links, all solids, `--max-radius 6.2 --max-pieces 152`. Stopped at 1731 of
+  1847 seeds; continue with `mise run search 3 0 --max-radius 6.2 --max-pieces 152`. Same 33 results as `runs/d2` so far.
 - `runs/webb4`: Webb's four piece types only, used as the sanity test.
