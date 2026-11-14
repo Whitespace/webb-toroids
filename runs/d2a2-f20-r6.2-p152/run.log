@@ -1,0 +1,41 @@
+config depth=2 any=2 min-group=24 near=0 only=all seeds=all range=None nseeds=331 max-radius=6.2 max-faces=20 max-pieces=152
+through links [0, 0, 0, 75, 70, 55, 37, 0, 8, 0, 5]
+solids 127 seeds 331 (0 already done) threads 2 axtab [0, 0, 0, 735, 427, 164, 97, 0, 48, 0, 15] links [0, 0, 0, 5193, 2242, 1300, 463, 0, 104, 0, 65]
+seeds done 10/331 202s
+seeds done 20/331 334s
+resuming: config depth=2 any=2 min-group=24 near=0 only=all seeds=all range=None nseeds=331 max-radius=6.2 max-faces=20 max-pieces=152
+through links [0, 0, 0, 75, 70, 55, 37, 0, 8, 0, 5]
+solids 127 seeds 331 (25 already done) threads 2 axtab [0, 0, 0, 735, 427, 164, 97, 0, 48, 0, 15] links [0, 0, 0, 5193, 2242, 1300, 463, 0, 104, 0, 65]
+seeds done 30/331 129s
+seeds done 40/331 328s
+seeds done 50/331 459s
+seeds done 60/331 512s
+seeds done 70/331 590s
+seeds done 80/331 685s
+seeds done 90/331 855s
+seeds done 100/331 1052s
+seeds done 110/331 1238s
+seeds done 120/331 1466s
+seeds done 130/331 1675s
+seeds done 140/331 1908s
+seeds done 150/331 2130s
+seeds done 160/331 2397s
+seeds done 170/331 2636s
+seeds done 180/331 2958s
+seeds done 190/331 3185s
+seeds done 200/331 3353s
+seeds done 210/331 3505s
+seeds done 220/331 3705s
+seeds done 230/331 3989s
+seeds done 240/331 4247s
+seeds done 250/331 4536s
+seeds done 260/331 4693s
+seeds done 270/331 4871s
+seeds done 280/331 4972s
+seeds done 290/331 5044s
+seeds done 300/331 5121s
+seeds done 310/331 5295s
+seeds done 320/331 5401s
+seeds done 330/331 5564s
+seeds done 331/331 5590s
+done 5589.6s tests 1515296345019 hits 194431763 unique 154 reasons {"q-proxy": 1136055, "overlap": 6213, "contact": 26, "q-prescreen": 36096873, "nonmanifold": 89, "genus0": 55, "disconnected": 125, "overlap-sphere": 33137853, "overlap-chain": 4010, "pruned-subtrees": 732342328, "overlap-centre": 1818243, "too-big": 1084736, "RAQT": 592, "overlap-quick": 121146657, "pinch": 108, "valid": 720} (counts cover this session only; unique is the total)

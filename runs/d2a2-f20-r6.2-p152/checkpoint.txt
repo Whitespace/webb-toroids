@@ -1,0 +1,486 @@
+config depth=2 any=2 min-group=24 near=0 only=all seeds=all range=None nseeds=331 max-radius=6.2 max-faces=20 max-pieces=152
+seed 1
+seed 0
+seed 3
+seed 2
+sig 0	60 29 560 1620 1004 0 0 4.6993 1965.862 30492.02 20xaugmented-tridiminished-icosahedron+12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+seed 4
+seed 5
+sig 1	60 29 800 2220 1364 0 0 6.1641 4224.972 124963.04 60xaugmented-pentagonal-prism+20xaugmented-tridiminished-icosahedron+12xpentagonal-rotunda+60xpentagonal-antiprism
+sig 2	60 29 800 2220 1364 0 0 6.1641 4293.493 129078.72 60xaugmented-pentagonal-prism+20xaugmented-tridiminished-icosahedron+12xpentagonal-rotunda+60xpentagonal-antiprism
+sig 3	60 29 860 2460 1544 0 0 6.1641 4595.496 136729.93 20xaugmented-tridiminished-icosahedron+60xbiaugmented-pentagonal-prism+12xpentagonal-rotunda+60xpentagonal-antiprism
+sig 4	60 29 740 1980 1184 0 0 6.1641 3991.490 121427.51 20xaugmented-tridiminished-icosahedron+12xpentagonal-rotunda+60xpentagonal-prism+60xpentagonal-antiprism
+sig 5	60 29 440 1380 884 0 0 4.6993 1727.397 29187.05 20xaugmented-tridiminished-icosahedron+12xpentagonal-rotunda+60xpentagonal-antiprism
+sig 6	60 29 512 1560 992 0 0 4.6993 1869.809 29771.45 20xaugmented-tridiminished-icosahedron+12xelongated-pentagonal-pyramid+12xpentagonal-rotunda+60xpentagonal-antiprism
+sig 7	60 29 512 1620 1052 0 0 4.6993 1879.840 29898.80 20xaugmented-tridiminished-icosahedron+12xgyroelongated-pentagonal-pyramid+12xpentagonal-rotunda+60xpentagonal-antiprism
+sig 8	60 29 500 1500 944 0 0 4.6993 1853.135 29739.26 20xaugmented-tridiminished-icosahedron+12xpentagonal-rotunda+12xpentagonal-prism+60xpentagonal-antiprism
+sig 9	60 29 500 1560 1004 0 0 4.6993 1861.374 29855.07 20xaugmented-tridiminished-icosahedron+12xpentagonal-rotunda+72xpentagonal-antiprism
+seed 7
+seed 6
+seed 8
+seed 9
+seed 10
+seed 11
+seed 13
+sig 10	24 11 152 384 212 0 0 2.7439 325.486 1855.14 24xaugmented-triangular-prism+6xcube+6xsquare-cupola+8xtetrahedron
+sig 11	24 11 192 456 244 0 0 3.3355 530.293 4595.88 24xaugmented-triangular-prism+6xcube+6xsquare-cupola+8xtriangular-cupola
+sig 12	24 11 152 408 236 0 0 2.7439 325.486 1855.14 24xbiaugmented-triangular-prism+6xcube+6xsquare-cupola+8xtetrahedron
+sig 13	24 11 216 552 316 0 0 3.3355 592.245 5008.68 24xbiaugmented-triangular-prism+6xcube+6xsquare-cupola+8xtriangular-cupola
+sig 14	24 11 176 408 212 0 0 2.7439 373.978 2125.80 6xcube+24xgyrobifastigium+6xsquare-cupola+8xtetrahedron
+sig 15	24 11 216 480 244 0 0 3.3355 591.176 5077.09 6xcube+24xgyrobifastigium+6xsquare-cupola+8xtriangular-cupola
+sig 16	24 11 144 408 244 0 0 2.9640 320.985 2003.40 6xcube+32xoctahedron+6xsquare-cupola
+sig 17	24 11 128 288 140 0 0 2.7439 276.655 1653.00 6xcube+6xsquare-cupola+8xtetrahedron+24xtriangular-prism
+sig 18	24 11 168 360 172 0 0 3.3355 468.341 4183.08 6xcube+6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+seed 12
+seed 14
+seed 16
+seed 15
+seed 17
+seed 19
+seed 18
+seed 21
+seed 20
+seed 22
+sig 19	24 11 192 528 316 0 0 2.9640 392.900 2194.41 8xcuboctahedron+32xoctahedron+6xsquare-cupola
+seed 23
+sig 20	60 29 600 1740 1084 0 0 4.6993 2083.080 31157.88 20xcuboctahedron+12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+seed 24
+seed 26
+seed 25
+sig 21	24 11 216 528 292 0 0 3.3355 568.244 4722.29 24xaugmented-triangular-prism+6xcuboctahedron+6xsquare-cupola+8xtriangular-cupola
+sig 22	24 11 240 624 364 0 0 3.3355 630.196 5135.09 24xbiaugmented-triangular-prism+6xcuboctahedron+6xsquare-cupola+8xtriangular-cupola
+sig 23	24 11 240 552 292 0 0 3.3355 629.127 5203.50 6xcuboctahedron+24xgyrobifastigium+6xsquare-cupola+8xtriangular-cupola
+sig 24	24 11 192 432 220 0 0 3.3355 506.292 4309.49 6xcuboctahedron+6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+seed 27
+seed 28
+seed 29
+seed 31
+seed 30
+seed 32
+seed 34
+seed 35
+seed 33
+seed 37
+seed 38
+seed 36
+seed 40
+seed 41
+seed 39
+seed 43
+seed 44
+seed 45
+seed 46
+seed 42
+seed 47
+seed 48
+seed 49
+seed 51
+seed 50
+seed 52
+seed 54
+seed 53
+seed 56
+seed 55
+seed 58
+seed 57
+seed 59
+seed 60
+seed 61
+seed 62
+seed 63
+seed 64
+seed 65
+seed 66
+seed 67
+seed 68
+seed 69
+seed 70
+seed 72
+seed 71
+seed 74
+seed 73
+seed 76
+seed 75
+seed 77
+seed 78
+seed 79
+sig 25	60 29 492 1500 952 0 0 4.6993 1823.096 29516.62 12xelongated-pentagonal-pyramid+12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+seed 81
+seed 80
+seed 82
+seed 83
+seed 85
+seed 84
+seed 87
+seed 86
+seed 89
+seed 88
+sig 26	24 11 198 480 262 0 0 3.3355 534.221 4597.56 24xaugmented-triangular-prism+6xelongated-square-pyramid+6xsquare-cupola+8xtriangular-cupola
+sig 27	24 11 222 576 334 0 0 3.3355 596.173 5010.36 24xbiaugmented-triangular-prism+6xelongated-square-pyramid+6xsquare-cupola+8xtriangular-cupola
+sig 28	24 11 222 504 262 0 0 3.3355 595.104 5078.77 6xelongated-square-pyramid+24xgyrobifastigium+6xsquare-cupola+8xtriangular-cupola
+sig 29	24 11 174 384 190 0 0 3.3355 472.269 4184.77 6xelongated-square-pyramid+6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+seed 91
+seed 90
+seed 92
+seed 94
+seed 93
+seed 95
+seed 97
+seed 96
+seed 99
+seed 98
+seed 100
+seed 101
+seed 103
+seed 102
+seed 104
+seed 105
+seed 107
+seed 106
+seed 108
+sig 30	24 11 152 432 260 0 0 2.9640 329.279 2026.09 8xelongated-triangular-pyramid+32xoctahedron+6xsquare-cupola
+sig 31	24 11 200 480 260 0 0 3.3355 530.704 4575.65 24xaugmented-triangular-prism+8xelongated-triangular-pyramid+6xsquare-cupola+8xtriangular-cupola
+sig 32	24 11 224 576 332 0 0 3.3355 592.655 4988.45 24xbiaugmented-triangular-prism+8xelongated-triangular-pyramid+6xsquare-cupola+8xtriangular-cupola
+sig 33	24 11 224 504 260 0 0 3.3355 591.587 5056.86 8xelongated-triangular-pyramid+24xgyrobifastigium+6xsquare-cupola+8xtriangular-cupola
+sig 34	24 11 176 384 188 0 0 3.3355 468.752 4162.85 8xelongated-triangular-pyramid+6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+sig 35	60 29 500 1500 944 0 0 4.6993 1841.091 29643.68 20xelongated-triangular-pyramid+12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+seed 110
+seed 109
+seed 112
+seed 111
+seed 113
+seed 114
+sig 36	60 29 492 1560 1012 0 0 4.6993 1833.127 29643.97 12xgyroelongated-pentagonal-pyramid+12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+seed 116
+seed 115
+seed 117
+seed 118
+seed 119
+seed 120
+sig 37	24 11 158 432 254 0 0 2.7439 328.872 1863.74 24xaugmented-triangular-prism+6xgyroelongated-square-pyramid+6xsquare-cupola+8xtetrahedron
+sig 38	24 11 198 504 286 0 0 3.3355 538.603 4625.65 24xaugmented-triangular-prism+6xgyroelongated-square-pyramid+6xsquare-cupola+8xtriangular-cupola
+sig 39	24 11 158 456 278 0 0 2.7439 328.872 1863.74 24xbiaugmented-triangular-prism+6xgyroelongated-square-pyramid+6xsquare-cupola+8xtetrahedron
+sig 40	24 11 222 600 358 0 0 3.3355 600.555 5038.45 24xbiaugmented-triangular-prism+6xgyroelongated-square-pyramid+6xsquare-cupola+8xtriangular-cupola
+sig 41	24 11 182 456 254 0 0 2.7439 377.365 2134.40 24xgyrobifastigium+6xgyroelongated-square-pyramid+6xsquare-cupola+8xtetrahedron
+sig 42	24 11 222 528 286 0 0 3.3355 599.486 5106.86 24xgyrobifastigium+6xgyroelongated-square-pyramid+6xsquare-cupola+8xtriangular-cupola
+sig 43	24 11 150 456 286 0 0 2.9640 324.557 2012.43 6xgyroelongated-square-pyramid+32xoctahedron+6xsquare-cupola
+sig 44	24 11 134 336 182 0 0 2.7439 280.042 1661.60 6xgyroelongated-square-pyramid+6xsquare-cupola+8xtetrahedron+24xtriangular-prism
+sig 45	24 11 174 408 214 0 0 3.3355 476.651 4212.85 6xgyroelongated-square-pyramid+6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+seed 122
+seed 121
+seed 123
+seed 124
+seed 125
+seed 126
+seed 127
+seed 129
+seed 130
+seed 131
+seed 128
+seed 132
+seed 133
+seed 135
+seed 134
+seed 137
+seed 136
+seed 138
+seed 139
+seed 140
+seed 141
+seed 142
+seed 144
+seed 143
+seed 146
+seed 145
+seed 147
+seed 148
+seed 150
+seed 151
+seed 149
+seed 152
+seed 153
+seed 154
+seed 155
+seed 156
+seed 158
+seed 157
+seed 159
+seed 160
+seed 161
+seed 162
+seed 163
+seed 165
+seed 164
+seed 166
+seed 167
+seed 168
+seed 170
+seed 169
+seed 171
+seed 172
+seed 173
+seed 174
+seed 175
+seed 176
+seed 178
+seed 177
+seed 179
+seed 180
+seed 182
+sig 46	24 11 144 432 268 0 0 2.9640 331.041 2046.52 40xoctahedron+6xsquare-cupola
+sig 47	24 11 192 480 268 0 0 3.3355 531.097 4601.68 24xaugmented-triangular-prism+8xoctahedron+6xsquare-cupola+8xtriangular-cupola
+sig 48	24 11 216 576 340 0 0 3.3355 593.049 5014.48 24xbiaugmented-triangular-prism+8xoctahedron+6xsquare-cupola+8xtriangular-cupola
+sig 49	24 11 216 504 268 0 0 3.3355 591.980 5082.89 24xgyrobifastigium+8xoctahedron+6xsquare-cupola+8xtriangular-cupola
+sig 50	24 11 168 384 196 0 0 3.3355 469.145 4188.89 8xoctahedron+6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+sig 51	60 29 480 1500 964 0 0 4.6993 1825.040 29767.85 20xoctahedron+12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+seed 183
+seed 181
+sig 52	24 11 216 600 364 0 0 3.9497 717.238 8483.45 24xaugmented-triangular-prism+32xoctahedron+6xsquare-cupola
+sig 53	24 11 174 528 334 0 0 3.1215 439.549 3200.10 24xaugmented-triangular-prism+32xoctahedron+6xsquare-pyramid
+sig 54	24 11 240 624 364 0 0 3.9497 768.024 8707.62 24xgyrobifastigium+32xoctahedron+6xsquare-cupola
+sig 55	24 11 198 552 334 0 0 3.1215 471.978 3258.37 24xgyrobifastigium+32xoctahedron+6xsquare-pyramid
+sig 56	24 11 120 360 220 0 0 2.9640 297.465 1980.81 32xoctahedron+6xsquare-cupola
+sig 57	24 11 78 288 190 0 0 2.1213 138.811 494.51 32xoctahedron+6xsquare-pyramid
+sig 58	24 11 126 384 238 0 0 2.9640 303.294 1986.31 32xoctahedron+6xsquare-cupola+6xsquare-pyramid
+sig 59	24 11 144 432 268 0 0 2.9640 323.774 2012.42 32xoctahedron+6xsquare-cupola+6xsquare-antiprism
+seed 185
+sig 60	24 11 120 360 220 0 0 2.9640 297.465 1980.81 8xoctahedron+6xsquare-cupola+48xsquare-pyramid
+sig 61	24 11 78 288 190 0 0 2.1213 138.811 494.51 8xoctahedron+54xsquare-pyramid
+sig 62	24 11 192 504 292 0 0 3.9497 661.617 8184.71 32xoctahedron+6xsquare-cupola+24xtriangular-prism
+sig 63	24 11 150 432 262 0 0 3.1215 403.862 3121.20 32xoctahedron+6xsquare-pyramid+24xtriangular-prism
+seed 184
+seed 186
+seed 188
+seed 187
+seed 190
+seed 189
+seed 191
+seed 193
+seed 194
+seed 192
+seed 195
+seed 196
+seed 198
+seed 199
+seed 200
+seed 197
+seed 202
+seed 201
+seed 203
+seed 205
+sig 64	60 29 420 1320 844 0 0 4.6993 1680.684 28932.22 12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+sig 65	60 29 780 2160 1324 0 0 6.1641 4217.313 127973.45 60xaugmented-pentagonal-prism+12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+sig 66	60 29 780 2160 1324 0 0 6.1641 4148.791 123857.76 60xaugmented-pentagonal-prism+12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+sig 67	60 29 840 2400 1504 0 0 6.1641 4519.315 135624.65 60xbiaugmented-pentagonal-prism+12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-antiprism
+sig 68	60 29 440 1380 884 0 0 4.6993 1727.397 29187.05 12xpentagonal-rotunda+20xtetrahedron+20xtridiminished-icosahedron+60xpentagonal-antiprism
+sig 69	60 29 540 1560 964 0 0 4.6993 1985.570 30900.34 12xpentagonal-rotunda+20xtriangular-cupola+20xtridiminished-icosahedron+60xpentagonal-antiprism
+sig 70	60 29 600 1740 1084 0 0 4.6993 2083.080 31157.88 12xpentagonal-rotunda+20xtriangular-orthobicupola+20xtridiminished-icosahedron+60xpentagonal-antiprism
+sig 71	60 29 540 1680 1084 0 0 4.6993 1984.353 30960.15 12xpentagonal-rotunda+20xtriaugmented-triangular-prism+20xtridiminished-icosahedron+60xpentagonal-antiprism
+sig 72	60 29 540 1560 964 0 0 4.6993 1949.380 30480.82 12xpentagonal-rotunda+40xtridiminished-icosahedron+60xpentagonal-antiprism
+sig 73	60 29 480 1440 904 0 0 4.6993 1814.378 29596.02 12xpentagonal-rotunda+20xtridiminished-icosahedron+20xtriangular-prism+60xpentagonal-antiprism
+sig 74	60 29 720 1920 1144 0 0 6.1641 3915.310 120322.24 12xpentagonal-rotunda+20xtridiminished-icosahedron+60xpentagonal-prism+60xpentagonal-antiprism
+seed 206
+seed 207
+sig 75	24 11 72 168 76 0 0 2.3176 144.821 663.24 6xsquare-cupola+8xtriangular-cupola
+sig 76	24 11 216 552 316 0 0 3.3355 595.894 5037.09 48xaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola
+sig 77	24 11 192 456 244 0 0 3.3355 555.418 4921.97 24xaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+sig 78	24 11 128 336 188 0 0 2.7439 302.358 1833.66 24xaugmented-triangular-prism+6xsquare-cupola+8xtetrahedron
+sig 79	24 11 168 408 220 0 0 3.3355 493.466 4509.17 24xaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola
+sig 80	24 11 176 432 236 0 0 3.3355 505.128 4533.96 24xaugmented-triangular-prism+6xsquare-cupola+8xtetrahedron+8xtriangular-cupola
+sig 81	24 11 216 504 268 0 0 3.3355 578.321 4774.35 24xaugmented-triangular-prism+6xsquare-cupola+16xtriangular-cupola
+sig 82	24 11 240 576 316 0 0 3.3355 599.030 4789.77 24xaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+8xtriangular-orthobicupola
+sig 83	24 11 216 552 316 0 0 3.3355 575.872 4777.02 24xaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+8xtriaugmented-triangular-prism
+sig 84	24 11 192 456 244 0 0 3.3355 527.041 4574.88 24xaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+8xtriangular-prism
+seed 204
+sig 85	24 11 216 576 340 0 0 3.3355 595.894 5037.09 24xaugmented-triangular-prism+24xbiaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola
+sig 86	24 11 128 360 212 0 0 2.7439 302.358 1833.66 24xbiaugmented-triangular-prism+6xsquare-cupola+8xtetrahedron
+sig 87	24 11 192 480 268 0 0 3.3355 555.418 4921.97 24xbiaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+sig 88	24 11 192 504 292 0 0 3.3355 555.418 4921.97 24xbiaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola
+sig 89	24 11 200 528 308 0 0 3.3355 567.080 4946.75 24xbiaugmented-triangular-prism+6xsquare-cupola+8xtetrahedron+8xtriangular-cupola
+sig 90	24 11 240 600 340 0 0 3.3355 640.272 5187.15 24xbiaugmented-triangular-prism+6xsquare-cupola+16xtriangular-cupola
+sig 91	24 11 264 672 388 0 0 3.3355 660.982 5202.57 24xbiaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+8xtriangular-orthobicupola
+sig 92	24 11 240 648 388 0 0 3.3355 637.824 5189.82 24xbiaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+8xtriaugmented-triangular-prism
+sig 93	24 11 216 552 316 0 0 3.3355 588.993 4987.68 24xbiaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+8xtriangular-prism
+sig 94	24 11 216 504 268 0 0 3.3355 594.667 4959.02 24xaugmented-triangular-prism+12xsquare-cupola+8xtriangular-cupola
+sig 95	24 11 240 600 340 0 0 3.3355 656.619 5371.82 24xbiaugmented-triangular-prism+12xsquare-cupola+8xtriangular-cupola
+sig 96	24 11 192 408 196 0 0 3.3355 532.715 4546.22 12xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+sig 97	24 11 152 360 188 0 0 2.7439 350.851 2104.32 24xgyrobifastigium+6xsquare-cupola+8xtetrahedron
+sig 98	24 11 192 432 220 0 0 3.3355 554.349 4990.38 24xgyrobifastigium+6xsquare-cupola+8xtriangular-cupola
+sig 99	24 11 200 456 236 0 0 3.3355 566.011 5015.16 24xgyrobifastigium+6xsquare-cupola+8xtetrahedron+8xtriangular-cupola
+sig 100	24 11 240 528 268 0 0 3.3355 639.204 5255.56 24xgyrobifastigium+6xsquare-cupola+16xtriangular-cupola
+sig 101	24 11 264 600 316 0 0 3.3355 659.913 5270.98 24xgyrobifastigium+6xsquare-cupola+8xtriangular-cupola+8xtriangular-orthobicupola
+sig 102	24 11 240 576 316 0 0 3.3355 636.755 5258.23 24xgyrobifastigium+6xsquare-cupola+8xtriangular-cupola+8xtriaugmented-triangular-prism
+sig 103	24 11 216 480 244 0 0 3.3355 587.924 5056.09 24xgyrobifastigium+6xsquare-cupola+8xtriangular-cupola+8xtriangular-prism
+seed 209
+sig 104	24 7 72 168 84 0 0 2.3176 144.821 663.24 12xcube+6xsquare-cupola
+sig 105	24 7 78 192 102 0 0 2.3176 147.821 663.99 12xcube+6xsquare-cupola+6xsquare-pyramid
+sig 106	24 7 84 216 120 0 0 2.3176 150.821 664.74 12xelongated-square-pyramid+6xsquare-cupola
+sig 107	24 7 90 240 138 0 0 2.3176 153.821 665.49 12xelongated-square-pyramid+6xsquare-cupola+6xsquare-pyramid
+sig 108	24 11 128 384 236 0 0 2.9640 307.660 1997.36 32xoctahedron+6xsquare-cupola+8xtetrahedron
+sig 109	24 11 168 456 268 0 0 2.9640 375.216 2184.81 32xoctahedron+6xsquare-cupola+8xtriangular-cupola
+sig 110	24 11 168 456 268 0 0 2.9640 359.778 2128.95 32xoctahedron+6xsquare-cupola+8xtridiminished-icosahedron
+sig 111	24 11 144 408 244 0 0 2.9640 327.085 2025.92 32xoctahedron+6xsquare-cupola+8xtriangular-prism
+sig 112	24 11 80 192 92 0 0 2.3176 148.483 664.01 6xsquare-cupola+8xtetrahedron+8xtriangular-cupola
+sig 113	24 11 78 192 94 0 0 2.3176 147.821 663.99 6xsquare-cupola+6xsquare-pyramid+8xtriangular-cupola
+seed 210
+seed 211
+sig 114	24 11 104 240 116 0 0 2.7439 253.528 1631.52 6xsquare-cupola+8xtetrahedron+24xtriangular-prism
+sig 115	24 11 144 312 148 0 0 3.3355 431.514 4096.37 6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism
+sig 116	24 11 152 336 164 0 0 3.3355 443.177 4121.16 6xsquare-cupola+8xtetrahedron+8xtriangular-cupola+24xtriangular-prism
+sig 117	24 11 192 408 196 0 0 3.3355 516.369 4361.55 6xsquare-cupola+16xtriangular-cupola+24xtriangular-prism
+sig 118	24 11 216 480 244 0 0 3.3355 537.078 4376.97 6xsquare-cupola+8xtriangular-cupola+8xtriangular-orthobicupola+24xtriangular-prism
+sig 119	24 11 192 456 244 0 0 3.3355 513.920 4364.22 6xsquare-cupola+8xtriangular-cupola+8xtriaugmented-triangular-prism+24xtriangular-prism
+sig 120	24 11 168 360 172 0 0 3.3355 465.090 4162.08 6xsquare-cupola+8xtriangular-cupola+32xtriangular-prism
+seed 208
+sig 121	24 11 240 576 316 0 0 3.3355 623.043 4998.69 24xaugmented-triangular-prism+6xsquare-cupola+6xsquare-gyrobicupola+8xtriangular-cupola
+sig 122	24 11 264 672 388 0 0 3.3355 684.995 5411.49 24xbiaugmented-triangular-prism+6xsquare-cupola+6xsquare-gyrobicupola+8xtriangular-cupola
+sig 123	24 11 216 480 244 0 0 3.3355 561.091 4585.89 6xsquare-cupola+6xsquare-gyrobicupola+8xtriangular-cupola+24xtriangular-prism
+seed 213
+seed 214
+seed 212
+sig 124	24 11 240 576 316 0 0 3.3355 623.043 4998.69 24xaugmented-triangular-prism+6xsquare-cupola+6xsquare-orthobicupola+8xtriangular-cupola
+sig 125	24 11 264 672 388 0 0 3.3355 684.995 5411.49 24xbiaugmented-triangular-prism+6xsquare-cupola+6xsquare-orthobicupola+8xtriangular-cupola
+sig 126	24 11 216 480 244 0 0 3.3355 561.091 4585.89 6xsquare-cupola+6xsquare-orthobicupola+8xtriangular-cupola+24xtriangular-prism
+seed 216
+seed 217
+seed 215
+sig 127	24 11 126 336 190 0 0 2.6645 274.470 1440.07 24xaugmented-triangular-prism+6xsquare-pyramid+8xtriangular-cupola
+sig 128	24 11 134 360 206 0 0 2.6645 279.204 1441.73 24xaugmented-triangular-prism+6xsquare-pyramid+8xtetrahedron+8xtriangular-cupola
+sig 129	24 11 134 360 206 0 0 2.7439 308.044 1838.76 24xaugmented-triangular-prism+6xsquare-cupola+6xsquare-pyramid+8xtetrahedron
+sig 130	24 11 174 432 238 0 0 3.3355 503.394 4536.36 24xaugmented-triangular-prism+6xsquare-cupola+6xsquare-pyramid+8xtriangular-cupola
+sig 131	24 11 134 384 230 0 0 2.7439 308.044 1838.76 24xbiaugmented-triangular-prism+6xsquare-cupola+6xsquare-pyramid+8xtetrahedron
+sig 132	24 11 198 528 310 0 0 3.3355 565.346 4949.15 24xbiaugmented-triangular-prism+6xsquare-cupola+6xsquare-pyramid+8xtriangular-cupola
+sig 133	24 11 158 384 206 0 0 2.7439 356.536 2109.43 24xgyrobifastigium+6xsquare-cupola+6xsquare-pyramid+8xtetrahedron
+sig 134	24 11 198 456 238 0 0 3.3355 564.277 5017.56 24xgyrobifastigium+6xsquare-cupola+6xsquare-pyramid+8xtriangular-cupola
+sig 135	24 11 86 216 110 0 0 2.3176 151.483 664.76 6xsquare-cupola+6xsquare-pyramid+8xtetrahedron+8xtriangular-cupola
+sig 136	24 11 110 264 134 0 0 2.7439 259.213 1636.62 6xsquare-cupola+6xsquare-pyramid+8xtetrahedron+24xtriangular-prism
+sig 137	24 11 150 336 166 0 0 3.3355 441.443 4123.56 6xsquare-cupola+6xsquare-pyramid+8xtriangular-cupola+24xtriangular-prism
+sig 138	24 11 150 360 190 0 0 2.6645 320.635 1672.90 24xgyrobifastigium+6xsquare-pyramid+8xtriangular-cupola
+sig 139	24 11 158 384 206 0 0 2.6645 325.369 1674.56 24xgyrobifastigium+6xsquare-pyramid+8xtetrahedron+8xtriangular-cupola
+seed 219
+sig 140	24 11 86 312 206 0 0 2.1213 142.077 495.06 32xoctahedron+6xsquare-pyramid+8xtetrahedron
+seed 220
+sig 141	24 11 62 168 86 0 0 1.9916 108.471 373.01 6xsquare-pyramid+8xtetrahedron+24xtriangular-prism
+sig 142	24 11 102 240 118 0 0 2.6645 228.725 1273.88 6xsquare-pyramid+8xtriangular-cupola+24xtriangular-prism
+sig 143	24 11 110 264 134 0 0 2.6645 233.459 1275.54 6xsquare-pyramid+8xtetrahedron+8xtriangular-cupola+24xtriangular-prism
+seed 218
+sig 144	24 11 152 408 236 0 0 2.7439 328.232 1863.73 24xaugmented-triangular-prism+6xsquare-cupola+8xtetrahedron+6xsquare-antiprism
+sig 145	24 11 152 432 260 0 0 2.7439 328.232 1863.73 24xbiaugmented-triangular-prism+6xsquare-cupola+8xtetrahedron+6xsquare-antiprism
+sig 146	24 11 176 432 236 0 0 2.7439 376.725 2134.40 24xgyrobifastigium+6xsquare-cupola+8xtetrahedron+6xsquare-antiprism
+sig 147	24 11 128 312 164 0 0 2.7439 279.402 1661.59 6xsquare-cupola+8xtetrahedron+24xtriangular-prism+6xsquare-antiprism
+seed 221
+seed 222
+seed 223
+seed 225
+seed 224
+seed 227
+seed 226
+seed 229
+sig 148	24 11 192 480 268 0 0 3.3355 533.720 4622.41 24xaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+6xsquare-antiprism
+sig 149	24 11 216 576 340 0 0 3.3355 595.672 5035.21 24xbiaugmented-triangular-prism+6xsquare-cupola+8xtriangular-cupola+6xsquare-antiprism
+seed 228
+sig 150	24 11 216 504 268 0 0 3.3355 594.603 5103.62 24xgyrobifastigium+6xsquare-cupola+8xtriangular-cupola+6xsquare-antiprism
+seed 231
+seed 232
+sig 151	24 11 168 384 196 0 0 3.3355 471.768 4209.61 6xsquare-cupola+8xtriangular-cupola+24xtriangular-prism+6xsquare-antiprism
+seed 230
+seed 233
+seed 234
+seed 235
+seed 236
+seed 237
+seed 239
+seed 238
+seed 240
+seed 241
+seed 243
+seed 242
+seed 244
+seed 246
+seed 245
+seed 247
+seed 249
+seed 250
+seed 248
+seed 251
+seed 253
+sig 152	60 29 480 1440 904 0 0 4.6993 1806.422 29484.43 12xpentagonal-rotunda+20xtridiminished-icosahedron+12xpentagonal-prism+60xpentagonal-antiprism
+sig 153	60 29 480 1500 964 0 0 4.6993 1814.661 29600.24 12xpentagonal-rotunda+20xtridiminished-icosahedron+72xpentagonal-antiprism
+seed 254
+seed 252
+seed 255
+seed 257
+seed 256
+seed 258
+seed 259
+seed 260
+seed 262
+seed 263
+seed 261
+seed 265
+seed 266
+seed 264
+seed 268
+seed 269
+seed 267
+seed 271
+seed 272
+seed 270
+seed 274
+seed 275
+seed 276
+seed 277
+seed 278
+seed 273
+seed 280
+seed 281
+seed 279
+seed 283
+seed 284
+seed 282
+seed 286
+seed 287
+seed 285
+seed 289
+seed 290
+seed 288
+seed 292
+seed 293
+seed 291
+seed 295
+seed 296
+seed 294
+seed 297
+seed 299
+seed 300
+seed 298
+seed 302
+seed 301
+seed 303
+seed 304
+seed 306
+seed 307
+seed 308
+seed 305
+seed 310
+seed 311
+seed 312
+seed 309
+seed 313
+seed 315
+seed 314
+seed 317
+seed 316
+seed 319
+seed 318
+seed 321
+seed 320
+seed 323
+seed 322
+seed 325
+seed 324
+seed 327
+seed 326
+seed 329
+seed 328
+seed 330
