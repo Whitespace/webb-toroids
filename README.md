@@ -65,6 +65,7 @@ Directly:
 | `--threads T` | worker threads | all CPUs |
 | `--resume` | continue from `checkpoint.txt` in the output directory if there is one; refuses if the settings differ | off |
 | `--no-join` | visit the last chain level link by link, as before the join (slower; same results, for checking) | off |
+| `--no-share` | test every hit on its own instead of sharing the chain-prefix screens between hits with the same group (slower; same results, for checking) | off |
 | `--out DIR` | output directory | `out` |
 
 Output: `results.tsv` (one row per distinct toroid), `results.jsonl` (representative pieces and
@@ -141,6 +142,16 @@ pieces' axis directions are stored once each. For each group one vector pass bin
 between the seed axis and every stored direction, and only pairs at an allowed angle whose axes
 are also coplanar are looked at further. The pairs that survive are exactly the ones the plain
 loop would have reached, in the same order (`--no-join` runs the plain loop for comparison).
+
+Many hits at one chain node generate the same group, and most of them fail on what the chain
+so far does under that group, whatever is attached afterwards. So per node and group the
+prefix is tested once: if its orbit overlaps itself or is too big, every hit with that group is
+dropped; if it fails the outermost-vertex screen, a hit is dropped when its remaining pieces lie
+closer to the centre than that vertex and put no vertex one edge length from it (then the full
+orbit fails the same screen at the same vertex). Everything else takes the normal path, so the
+results are the same (`--no-share` to compare; `SHARE_CHECK=1` asserts that hits sharing a cache
+entry really have the same group). In the `done` line these show as `prefix-overlap` and
+`prefix-q`.
 
 ## Included runs
 

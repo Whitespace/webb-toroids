@@ -39,7 +39,9 @@ struct UDirs { w: [Vec<f64>; 3], n: usize, start: Vec<u32>, ent: Vec<u32>, p: Ve
 /// their exit frames is the same, so one scan of the direction table serves all of them.
 struct RotClass { r: M3, hn: usize, links: Vec<u32>, t: Vec<V3> }
 
-struct Tables { ud: Vec<UDirs>, rc: [Vec<Vec<RotClass>>; 2], axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
+/// `pqk[i]` goes with `pq[i]`: a top-order axis of the generated group nearest the first generator's
+/// axis, in the frame (e2, e3, u) of the two generator axes, and how many such axes ring it.
+struct Tables { pqk: Vec<(V3, usize)>, ud: Vec<UDirs>, rc: [Vec<Vec<RotClass>>; 2], axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
 
 fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -> Tables {
     let mut ax: Vec<Vec<AxEntry>> = (0..11).map(|_| Vec::new()).collect();
@@ -134,7 +136,27 @@ fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -
         out
     }).collect() };
     let rc = [classes(&thru), classes(&links)];
-    Tables { ud, rc, axw, sc, ax, links, thru, cosset, pq, cosbin }
+    let tau = 2.0 * std::f64::consts::PI;
+    let pqk: Vec<(V3, usize)> = pq.iter().map(|(p, q, c, rec)| {
+        let gens = [Xf::about(o0, [0.0, 0.0, 1.0], tau / *p as f64), Xf::about(o0, [(1.0 - c * c).sqrt(), 0.0, *c], tau / *q as f64)];
+        let mut el = Vec::new();
+        from_recipe(&gens, rec, &mut el);
+        let rs: Vec<M3> = el.iter().map(|x| x.r).collect();
+        let mut dirs: Vec<(V3, usize)> = Vec::new();
+        for (d, o) in group_axes(&rs) { if d[2].abs() < 1.0 - 1e-6 { dirs.push((d, o)); dirs.push((scale(d, -1.0), o)); } }
+        let top = dirs.iter().map(|x| x.1).max().unwrap_or(0);
+        let cmax = dirs.iter().filter(|x| x.1 == top).map(|x| x.0[2]).fold(-2.0, f64::max);
+        let sel: Vec<V3> = dirs.iter().filter(|x| x.1 == top && x.0[2] > cmax - 1e-6).map(|x| x.0).collect();
+        let m = sel.len();
+        if m == 0 { return ([0.0; 3], 0); }
+        // they must be evenly spaced about the first axis, or the key below is not canonical
+        let mut az: Vec<f64> = sel.iter().map(|d| d[1].atan2(d[0]).rem_euclid(tau / m as f64)).collect();
+        az.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let spread = az[m - 1] - az[0];
+        if spread > 1e-6 && (tau / m as f64 - spread) > 1e-6 { return ([0.0; 3], 0); }
+        (sel[0], m)
+    }).collect();
+    Tables { pqk, ud, rc, axw, sc, ax, links, thru, cosset, pq, cosbin }
 }
 
 struct Shared {
@@ -181,6 +203,18 @@ struct Ctx<'a> {
     bins: Vec<i32>,
     /// the signed cos values behind `sbin`
     scos: Vec<f64>,
+    /// Per-node cache: group (as a set) -> what the chain so far, without link or end piece
+    /// still to come, does under it. Cleared in `test`, which every node runs first.
+    share: bool,
+    check: bool,
+    gc: std::collections::HashMap<[i64; 3], u32, std::hash::BuildHasherDefault<validate::Fx>>,
+    gce: Vec<GEnt>,
+    gcg: Vec<Xf>,
+    gc_np: usize,
+    ex: V3,
+    ey: V3,
+    pre_ov: u64,
+    pre_q: u64,
     cand: Vec<(u32, u32)>,
 }
 
@@ -199,6 +233,10 @@ impl Stats {
         *self = Stats { calls: self.calls, quick_total: self.quick_total, ..Default::default() };
     }
 }
+
+/// verdict 1: the prefix orbit overlaps itself or is too big; 2: it fails the outermost-vertex
+/// screen at `vs`; 0: neither.
+struct GEnt { verdict: u8, vs: V3, far: f64, g0: usize, gl: usize }
 
 fn divisors(n: usize) -> Vec<usize> { [2usize, 3, 4, 5].iter().cloned().filter(|d| n % d == 0).collect() }
 
@@ -260,6 +298,8 @@ fn record(ctx: &mut Ctx, reps: &[(usize, Xf)], gens: &[Xf], centre: V3, res: Res
 }
 
 fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
+    if !ctx.gce.is_empty() { ctx.gc.clear(); ctx.gce.clear(); ctx.gcg.clear(); }
+    ctx.gc_np = pieces.len();
     let wi = w.inv();
     let o = wi.t;
     let u = mv(&wi.r, ctx.u);
@@ -310,10 +350,46 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
         for pi in 0..ctx.pdiv.len() {
             let p = ctx.pdiv[pi];
             for &q in bq {
-                let rec = match tab.pq.iter().find(|x| x.0 == p && x.1 == q && (x.2 - cs).abs() < 1e-7 && x.3.len() >= ctx.minorder) { Some(x) => &x.3, None => continue };
+                let ri = match tab.pq.iter().position(|x| x.0 == p && x.1 == q && (x.2 - cs).abs() < 1e-7 && x.3.len() >= ctx.minorder) { Some(x) => x, None => continue };
+                let rec = &tab.pq[ri].3;
                 ctx.hits += 1;
                 ctx.st.hits += 1;
                 let gens = [Xf::about_sc(centre, ctx.u, tab.sc[p]), Xf::about_sc(centre, wb, tab.sc[q])];
+                // Many hits at one node generate the same group, and most die on what the chain
+                // prefix does under it, whatever comes after. So that is worked out once per group.
+                let (rv, m) = tab.pqk[ri];
+                if ctx.share && m > 0 {
+                    let e2 = unit(sub(wb, scale(ctx.u, cs)));
+                    let e3 = cross(ctx.u, e2);
+                    let r = add(add(scale(e2, rv[0]), scale(e3, rv[1])), scale(ctx.u, rv[2]));
+                    let per = 2.0 * std::f64::consts::PI / m as f64;
+                    let az = dot(r, ctx.ey).atan2(dot(r, ctx.ex)).rem_euclid(per);
+                    let key = [(rec.len() * 8 + p) as i64, (s * 1e6).round() as i64, (az * 1e6).round() as i64];
+                    let gi = match ctx.gc.get(&key) {
+                        Some(&i) => i as usize,
+                        None => {
+                            from_recipe(&gens, rec, &mut ctx.scratch.grp);
+                            ctx.scratch.probe = true;
+                            let res = validate::validate(ctx.lib, &pieces[..ctx.gc_np], centre, true, &mut ctx.scratch);
+                            ctx.scratch.probe = false;
+                            let verdict = match res { Err("overlap-centre") | Err("overlap-sphere") | Err("too-big") => 1, Err("q-prescreen") => 2, _ => 0 };
+                            let g0 = ctx.gcg.len();
+                            if verdict == 2 || ctx.check { ctx.gcg.extend_from_slice(&ctx.scratch.grp); }
+                            ctx.gce.push(GEnt { verdict, vs: ctx.scratch.vs, far: ctx.scratch.far, g0, gl: ctx.gcg.len() - g0 });
+                            ctx.gc.insert(key, ctx.gce.len() as u32 - 1);
+                            ctx.gce.len() - 1
+                        }
+                    };
+                    let ge = &ctx.gce[gi];
+                    let grp = &ctx.gcg[ge.g0..ge.g0 + ge.gl];
+                    if ctx.check {
+                        let mut el = Vec::new();
+                        from_recipe(&gens, rec, &mut el);
+                        assert!(el.len() == grp.len() && el.iter().all(|a| grp.iter().any(|b| mclose(&a.r, &b.r, 1e-6) && dist(a.t, b.t) < 1e-6)), "group cache key is not canonical");
+                    }
+                    if ge.verdict == 1 { ctx.pre_ov += 1; continue; }
+                    if ge.verdict == 2 && ctx.near == 0 && pieces[ctx.gc_np..].iter().all(|(s, x)| validate::extra_clear(ctx.lib, *s, x, centre, grp, ge.vs, ge.far)) { ctx.pre_q += 1; continue; }
+                }
                 // quick reject: inscribed spheres of chain pieces against their images under the generators
                 let mut quick = false;
                 'q: for g in &gens {
@@ -498,6 +574,7 @@ fn main() {
     let mut seeds_only: Option<Vec<String>> = None;
     let mut links_only: Option<Vec<String>> = None;
     let mut use_join = true;
+    let mut use_share = true;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -510,6 +587,7 @@ fn main() {
             "--seed-range" => { let v: Vec<usize> = args[i + 1].split(':').map(|x| x.parse().unwrap()).collect(); range = Some((v[0], v[1])); i += 1; }
             "--resume" => { resume = true; }
             "--no-join" => { use_join = false; }
+            "--no-share" => { use_share = false; }
             "--max-radius" => { maxrad = args[i + 1].parse().unwrap(); i += 1; }
             "--max-faces" => { maxfaces = args[i + 1].parse().unwrap(); i += 1; }
             "--max-pieces" => { maxpieces = args[i + 1].parse().unwrap(); i += 1; }
@@ -624,19 +702,24 @@ fn main() {
                 let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
                     pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, csbuf: Vec::new(), st: Default::default(),
-                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), bins: Vec::new(), scos: Vec::new(), cand: Vec::new() };
+                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, bins: Vec::new(), scos: Vec::new(), cand: Vec::new() };
                 for x in &tab.pq {
                     if !ctx.pdiv.contains(&x.0) || x.3.len() < minorder { continue; }
                     let b = ((x.2 + 1.0) * 4096.0) as usize;
                     for k in b.saturating_sub(1)..=b + 1 { ctx.sbin[k] = true; }
                     if !ctx.scos.iter().any(|c| (c - x.2).abs() < 1e-9) { ctx.scos.push(x.2); }
                 }
+                let a = if u[0].abs() < 0.6 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
+                ctx.ex = unit(cross(u, a));
+                ctx.ey = cross(u, ctx.ex);
                 ctx.axrot = ctx.pdiv.iter().map(|&p| rot_sc(u, tab.sc[p])).collect();
                 ctx.scratch.max_pieces = maxpieces;
                 let mut pieces = vec![(ctx.a, Xf::ident())];
                 let w = s.frames[f][0];
                 dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces);
                 ctx.st.flush();
+                if ctx.pre_ov > 0 { *ctx.reasons.entry("prefix-overlap").or_insert(0) += ctx.pre_ov; }
+                if ctx.pre_q > 0 { *ctx.reasons.entry("prefix-q").or_insert(0) += ctx.pre_q; }
                 if ctx.pruned > 0 { *ctx.reasons.entry("pruned-subtrees").or_insert(0) += ctx.pruned; }
                 if ctx.st.quick_total > 0 { *ctx.reasons.entry("overlap-quick").or_insert(0) += ctx.st.quick_total; }
                 tests.fetch_add(ctx.tests, Ordering::Relaxed);

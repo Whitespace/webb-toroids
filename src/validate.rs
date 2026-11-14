@@ -187,6 +187,27 @@ pub struct Scratch {
     elist: Vec<(f64, u32, u32)>,
     /// --max-pieces: reject larger orbits outright (0 pieces allowed never happens; MAX = no limit)
     pub max_pieces: usize,
+    /// probe mode: stop with Err("probe-pass") once the outermost-vertex screen has passed
+    pub probe: bool,
+    /// the outermost vertex the last call used, and its squared distance from the centre
+    pub vs: V3,
+    pub far: f64,
+}
+
+/// For a chain prefix that fails the outermost-vertex screen at `vs` under the group `grp`: true
+/// if adding the piece (s, x) cannot change that. It must lie strictly closer to the centre than
+/// `vs`, and no image of it may have a vertex one edge length from `vs`. Then the full orbit has
+/// the same outermost vertex and the same unit edges there, so it fails in the same way.
+pub fn extra_clear(lib: &[Solid], s: usize, x: &Xf, centre: V3, grp: &[Xf], vs: V3, far: f64) -> bool {
+    let so = &lib[s].soa;
+    if so.far2(mtv(&x.r, sub(centre, x.t))) > far - 1e-9 { return false; }
+    let lim = lib[s].radius + 1.0 + 1e-6;
+    for g in grp {
+        let dc = sub(g.ap(x.t), vs);
+        if dot(dc, dc) > lim * lim { continue; }
+        if so.any_unit(loc(&x.r, &g.r, scale(dc, -1.0)), 2e-6) { return false; }
+    }
+    true
 }
 
 /// m^T v
@@ -329,7 +350,7 @@ pub struct Res {
 /// Build the orbit of reps under the group in sc.grp, check it is a valid embedded closed surface,
 /// and measure it. Err(reason) on rejection.
 pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool, sc: &mut Scratch) -> Result<Res, &'static str> {
-    let Scratch { grp, ent, on, hull, dirs, facets, done, planes, stab, skip, elist, max_pieces } = sc;
+    let Scratch { grp, ent, on, hull, dirs, facets, done, planes, stab, skip, elist, max_pieces, probe, vs: pvs, far: pfar } = sc;
     let grp: &[Xf] = grp;
     // the centre strictly inside an off-centre piece means that piece meets its own images
     for &(s, x) in reps {
@@ -388,6 +409,8 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool
                 vs = x.ap(lib[s].v[k]);
             }
         }
+        *pvs = vs;
+        *pfar = far;
         dirs.clear();
         for e in ent.iter() {
             let dc = sub(e.c, vs);
@@ -427,6 +450,7 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool
                 if lib[e.s as usize].soa.proj_max(loc(rx, gr, *n)) + off > 1e-6 { return Err("q-prescreen"); }
             }
         }
+        if *probe { return Err("probe-pass"); }
     }
     // (Q) necessary condition on bare points, no mesh: every hull face found through a
     // representative edge must have unit-length sides. Stops at the first failure.
