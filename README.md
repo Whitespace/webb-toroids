@@ -64,6 +64,7 @@ Directly:
 | `--seed-range A:B` | run seeds A to B-1 only, to split a run | all |
 | `--threads T` | worker threads | all CPUs |
 | `--resume` | continue from `checkpoint.txt` in the output directory if there is one; refuses if the settings differ | off |
+| `--no-join` | visit the last chain level link by link, as before the join (slower; same results, for checking) | off |
 | `--out DIR` | output directory | `out` |
 
 Output: `results.tsv` (one row per distinct toroid), `results.jsonl` (representative pieces and
@@ -133,6 +134,13 @@ inscribed spheres overlapping; the cone of unit edges at the outermost vertex; t
 edge from the outside in, the hull faces through that edge must have unit sides. Edges that a
 piece's own symmetry carries onto one another are tested once. Only survivors are placed,
 collision-tested and meshed.
+
+The last chain level is a join rather than a loop. Links that leave through the same polygon
+with the same rotation see the seed axis in the same direction, so they are grouped; the end
+pieces' axis directions are stored once each. For each group one vector pass bins the angle
+between the seed axis and every stored direction, and only pairs at an allowed angle whose axes
+are also coplanar are looked at further. The pairs that survive are exactly the ones the plain
+loop would have reached, in the same order (`--no-join` runs the plain loop for comparison).
 
 ## Included runs
 

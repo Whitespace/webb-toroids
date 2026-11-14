@@ -111,3 +111,15 @@ pub fn dots(u: V3, wx: &[f64], wy: &[f64], wz: &[f64], out: &mut [f64]) {
         for l in 0..W { o[l] = u[0] * x[l] + u[1] * y[l] + u[2] * z[l]; }
     }
 }
+
+/// out[i] = bin of u . w[i], with [-1, 1] cut into 8192 bins, for a table lookup on the angle.
+#[inline]
+pub fn bins(u: V3, wx: &[f64], wy: &[f64], wz: &[f64], out: &mut [i32]) {
+    for (((x, y), z), o) in wx.chunks_exact(W).zip(wy.chunks_exact(W)).zip(wz.chunks_exact(W)).zip(out.chunks_exact_mut(W)) {
+        for l in 0..W {
+            let c = (u[0] * x[l] + u[1] * y[l] + u[2] * z[l] + 1.0) * 4096.0;
+            // c is within rounding of [0, 8192], so the conversion cannot overflow
+            o[l] = unsafe { c.to_int_unchecked::<i32>() };
+        }
+    }
+}

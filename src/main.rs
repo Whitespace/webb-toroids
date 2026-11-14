@@ -32,7 +32,14 @@ struct AxEntry { solid: usize, face: usize, k: usize, order: usize, xp: Xf, p: V
 struct Link { solid: usize, g: usize, k: usize, h: usize, hn: usize, xp: Xf, exit: Xf, through: bool }
 
 /// `axw[n]` holds the axis directions of `ax[n]` as padded structure-of-arrays for the vector dot product.
-struct Tables { axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
+/// Distinct axis directions of `ax[n]` (padded structure-of-arrays) and, per direction, the entries that have it.
+#[derive(Default)]
+struct UDirs { w: [Vec<f64>; 3], n: usize, start: Vec<u32>, ent: Vec<u32>, p: Vec<V3> }
+/// Links of one list that share an exit rotation (and exit polygon): the seed axis direction in
+/// their exit frames is the same, so one scan of the direction table serves all of them.
+struct RotClass { r: M3, hn: usize, links: Vec<u32>, t: Vec<V3> }
+
+struct Tables { ud: Vec<UDirs>, rc: [Vec<Vec<RotClass>>; 2], axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
 
 fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -> Tables {
     let mut ax: Vec<Vec<AxEntry>> = (0..11).map(|_| Vec::new()).collect();
@@ -97,7 +104,37 @@ fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -
     }).collect();
     let mut sc = [(0.0, 1.0); 6];
     for k in 2..6 { sc[k] = (2.0 * std::f64::consts::PI / k as f64).sin_cos(); }
-    Tables { axw, sc, ax, links, thru, cosset, pq, cosbin }
+    let ud: Vec<UDirs> = ax.iter().map(|v| {
+        let mut keys: std::collections::HashMap<[i64; 3], usize> = Default::default();
+        let mut dirs: Vec<V3> = Vec::new();
+        let mut mem: Vec<Vec<u32>> = Vec::new();
+        for (i, e) in v.iter().enumerate() {
+            let k = [(e.w[0] * 1e8).round() as i64, (e.w[1] * 1e8).round() as i64, (e.w[2] * 1e8).round() as i64];
+            let d = *keys.entry(k).or_insert_with(|| { dirs.push(e.w); mem.push(Vec::new()); dirs.len() - 1 });
+            mem[d].push(i as u32);
+        }
+        let m = (dirs.len() + simd::W - 1) / simd::W * simd::W;
+        let col = |i: usize| -> Vec<f64> { (0..m).map(|k| if k < dirs.len() { dirs[k][i] } else { 0.0 }).collect() };
+        let mut start = vec![0u32];
+        let mut ent = Vec::new();
+        for g in &mem { ent.extend_from_slice(g); start.push(ent.len() as u32); }
+        let p = ent.iter().map(|&i| v[i as usize].p).collect();
+        UDirs { w: [col(0), col(1), col(2)], n: dirs.len(), start, ent, p }
+    }).collect();
+    let classes = |lists: &Vec<Vec<Link>>| -> Vec<Vec<RotClass>> { lists.iter().map(|v| {
+        let mut keys: std::collections::HashMap<[i64; 10], usize> = Default::default();
+        let mut out: Vec<RotClass> = Vec::new();
+        for (i, l) in v.iter().enumerate() {
+            let mut k = [l.hn as i64; 10];
+            for a in 0..3 { for b in 0..3 { k[a * 3 + b] = (l.exit.r[a][b] * 1e8).round() as i64; } }
+            let c = *keys.entry(k).or_insert_with(|| { out.push(RotClass { r: l.exit.r, hn: l.hn, links: Vec::new(), t: Vec::new() }); out.len() - 1 });
+            out[c].links.push(i as u32);
+            out[c].t.push(l.exit.t);
+        }
+        out
+    }).collect() };
+    let rc = [classes(&thru), classes(&links)];
+    Tables { ud, rc, axw, sc, ax, links, thru, cosset, pq, cosbin }
 }
 
 struct Shared {
@@ -136,6 +173,15 @@ struct Ctx<'a> {
     /// --max-radius: no piece centre may be further than this from the seed axis or the centre
     maxrad: f64,
     pruned: u64,
+    /// join the last chain level through the direction tables instead of scanning link by link
+    join: bool,
+    /// bitmap over the signed cos of the angle between the seed axis and an end axis: the values
+    /// some group recipe accepts for this seed's axis orders, one bin of slack either side
+    sbin: Box<[bool; 65536]>,
+    bins: Vec<i32>,
+    /// the signed cos values behind `sbin`
+    scos: Vec<f64>,
+    cand: Vec<(u32, u32)>,
 }
 
 /// Per-thread counters, pushed to the shared atomics now and then so the hot path never
@@ -232,21 +278,32 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
         let cs = buf[i];
         let c = cs.abs();
         if !tab.cosbin[(c * 4096.0) as usize] { continue; }
-        if !tab.cosset.iter().any(|x| (x - c).abs() < 1e-7) { continue; }
-        let e = &ents[i];
+        entry(ctx, w, o, u, n, i, cs, pieces);
+    }
+    ctx.csbuf = buf;
+}
+
+/// One end piece: entry `i` of `ax[n]` on the open face with frame `w`. `o`, `u` are the seed axis
+/// (a point and the direction) in that frame, `cs` the cos of the angle between the two axes.
+fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, pieces: &mut Vec<(usize, Xf)>) {
+    let tab = ctx.tab;
+    let c = cs.abs();
+    {
+        if !tab.cosset.iter().any(|x| (x - c).abs() < 1e-7) { return; }
+        let e = &tab.ax[n][i];
         let nn = cross(u, e.w);
         let d = sub(e.p, o);
-        if dot(d, nn).abs() > 1e-7 { continue; }
+        if dot(d, nn).abs() > 1e-7 { return; }
         let bq = &e.bq[..e.nbq];
-        if ctx.ordered && bq[0] >= 3 && e.solid < ctx.a { continue; }
+        if ctx.ordered && bq[0] >= 3 && e.solid < ctx.a { return; }
         let s = dot(cross(d, e.w), nn) / dot(nn, nn);
         let centre = scale(ctx.u, s);
         // a piece sitting on the centre gives a star of arms, not a shell; skip those
         let db = dist(centre, w.ap(e.p));
-        if s.abs() < 1e-6 || db < 1e-6 { continue; }
-        if s.abs() > ctx.maxrad || db > ctx.maxrad { continue; }
+        if s.abs() < 1e-6 || db < 1e-6 { return; }
+        if s.abs() > ctx.maxrad || db > ctx.maxrad { return; }
         // centre strictly inside the seed piece: it would meet its own images
-        if s > ctx.inside.0 && s < ctx.inside.1 { continue; }
+        if s > ctx.inside.0 && s < ctx.inside.1 { return; }
         let xb = w.mul(&e.xp);
         let wb = mv(&w.r, e.w);
         pieces.push((e.solid, xb));
@@ -287,7 +344,6 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
         }
         pieces.pop();
     }
-    ctx.csbuf = buf;
 }
 
 /// True if no chain through this new link can survive, so the whole subtree is skipped. All
@@ -329,9 +385,91 @@ fn prune(ctx: &Ctx, sl: usize, cl: V3, pieces: &[(usize, Xf)]) -> bool {
     true
 }
 
+/// The last chain level, without visiting every link. Gives exactly what one more level of
+/// `dfs` would: the same (link, end piece) pairs reach `entry` in the same order. Links that
+/// share an exit rotation see the seed axis in the same direction, so the direction table of the
+/// exit polygon is scanned once per rotation class; only the few pairs whose axes make an
+/// allowed angle and are coplanar (loose tolerances here, the exact ones in `entry`) go further.
+fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
+    let tab = ctx.tab;
+    let (list, classes) = if any_left == 0 { (&tab.thru[n], &tab.rc[0][n]) } else { (&tab.links[n], &tab.rc[1][n]) };
+    let wi = w.inv();
+    let o = wi.t;
+    let u = mv(&wi.r, ctx.u);
+    let mut bins = std::mem::take(&mut ctx.bins);
+    let sbin: &[bool; 65536] = &ctx.sbin;
+    let scos = std::mem::take(&mut ctx.scos);
+    let mut cand = std::mem::take(&mut ctx.cand);
+    cand.clear();
+    let mut work = 0u64;
+    for rc in classes {
+        // the seed axis direction in the exit frame: transpose(r) * u
+        let ul = [u[0] * rc.r[0][0] + u[1] * rc.r[1][0] + u[2] * rc.r[2][0], u[0] * rc.r[0][1] + u[1] * rc.r[1][1] + u[2] * rc.r[2][1], u[0] * rc.r[0][2] + u[1] * rc.r[1][2] + u[2] * rc.r[2][2]];
+        let ud = &tab.ud[rc.hn];
+        let [wx, wy, wz] = &ud.w;
+        bins.resize(wx.len(), 0);
+        simd::bins(ul, wx, wy, wz, &mut bins);
+        work += ud.n as u64;
+        for (ci, ch) in bins.chunks_exact(simd::W).enumerate() {
+          // one branch per chunk: almost every chunk has no direction at an allowed angle
+          if !ch.iter().fold(false, |a, &b| a | sbin[b as usize & 0xffff]) { continue; }
+          for d in ci * simd::W..((ci + 1) * simd::W).min(ud.n) {
+            if !sbin[bins[d] as usize & 0xffff] { continue; }
+            // the exact angle test (the bins are coarse), then coplanarity on compact copies
+            let wd = [wx[d], wy[d], wz[d]];
+            let cs = dot(ul, wd);
+            if !scos.iter().any(|c| (c - cs).abs() < 1e-6) { continue; }
+            let nn = cross(ul, wd);
+            let (m0, m1) = (ud.start[d] as usize, ud.start[d + 1] as usize);
+            for (k, &li) in rc.links.iter().enumerate() {
+                // the seed axis point in this link's exit frame, along nn
+                let t = sub(o, rc.t[k]);
+                let ol = [t[0] * rc.r[0][0] + t[1] * rc.r[1][0] + t[2] * rc.r[2][0], t[0] * rc.r[0][1] + t[1] * rc.r[1][1] + t[2] * rc.r[2][1], t[0] * rc.r[0][2] + t[1] * rc.r[1][2] + t[2] * rc.r[2][2]];
+                let h = dot(ol, nn);
+                for m in m0..m1 {
+                    if (dot(ud.p[m], nn) - h).abs() < 1e-5 { cand.push((li, ud.ent[m])); }
+                }
+            }
+          }
+        }
+    }
+    ctx.tests += work;
+    ctx.st.tests += work;
+    ctx.st.calls += 1;
+    if ctx.st.calls & 0xff == 0 { ctx.st.flush(); }
+    cand.sort_unstable();
+    let mut i = 0;
+    while i < cand.len() {
+        let li = cand[i].0;
+        let mut j = i;
+        while j < cand.len() && cand[j].0 == li { j += 1; }
+        let l = &list[li as usize];
+        let xl = w.mul(&l.xp);
+        if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; i = j; continue; }
+        pieces.push((l.solid, xl));
+        ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[l.solid].name, l.g, l.k, l.h));
+        let w2 = w.mul(&l.exit);
+        let wi2 = w2.inv();
+        let (o2, u2) = (wi2.t, mv(&wi2.r, ctx.u));
+        for k in i..j {
+            let ei = cand[k].1 as usize;
+            let cs = dot(u2, tab.ax[l.hn][ei].w);
+            if !tab.cosbin[(cs.abs() * 4096.0) as usize] { continue; }
+            entry(ctx, &w2, o2, u2, l.hn, ei, cs, pieces);
+        }
+        ctx.desc.pop();
+        pieces.pop();
+        i = j;
+    }
+    ctx.bins = bins;
+    ctx.cand = cand;
+    ctx.scos = scos;
+}
+
 fn dfs(ctx: &mut Ctx, w: &Xf, n: usize, depth: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
     test(ctx, w, n, pieces);
     if depth >= ctx.maxdepth { return; }
+    if ctx.join && depth + 1 == ctx.maxdepth { join(ctx, w, n, any_left, pieces); return; }
     let tab = ctx.tab;
     let list = if any_left == 0 { &tab.thru[n] } else { &tab.links[n] };
     for l in list {
@@ -359,6 +497,7 @@ fn main() {
     let mut only: Option<Vec<String>> = None;
     let mut seeds_only: Option<Vec<String>> = None;
     let mut links_only: Option<Vec<String>> = None;
+    let mut use_join = true;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -370,6 +509,7 @@ fn main() {
             "--near" => { near = args[i + 1].parse().unwrap(); i += 1; }
             "--seed-range" => { let v: Vec<usize> = args[i + 1].split(':').map(|x| x.parse().unwrap()).collect(); range = Some((v[0], v[1])); i += 1; }
             "--resume" => { resume = true; }
+            "--no-join" => { use_join = false; }
             "--max-radius" => { maxrad = args[i + 1].parse().unwrap(); i += 1; }
             "--max-faces" => { maxfaces = args[i + 1].parse().unwrap(); i += 1; }
             "--max-pieces" => { maxpieces = args[i + 1].parse().unwrap(); i += 1; }
@@ -450,6 +590,8 @@ fn main() {
     let shared = Mutex::new(Shared { seen, tsv, jsonl, ckpt, n: nres, reasons: Default::default() });
     say(format!("{}{}", if resuming { "resuming: " } else { "" }, config));
     say(format!("through links {:?}", tab.thru.iter().map(|v| v.len()).collect::<Vec<_>>()));
+    if use_join { say(format!("join: directions {:?} rotation classes {:?} (through {:?})", tab.ud.iter().map(|v| v.n).collect::<Vec<_>>(),
+        tab.rc[1].iter().map(|v| v.len()).collect::<Vec<_>>(), tab.rc[0].iter().map(|v| v.len()).collect::<Vec<_>>())); }
     say(format!("solids {} seeds {} ({} already done) threads {} axtab {:?} links {:?}", lib.len(), seeds.len(), seeds.len() - todo.len(), threads,
         tab.ax.iter().map(|v| v.len()).collect::<Vec<_>>(), tab.links.iter().map(|v| v.len()).collect::<Vec<_>>()));
     let next = AtomicUsize::new(0);
@@ -482,7 +624,13 @@ fn main() {
                 let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
                     pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, csbuf: Vec::new(), st: Default::default(),
-                    axrot: Vec::new(), maxrad, pruned: 0 };
+                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), bins: Vec::new(), scos: Vec::new(), cand: Vec::new() };
+                for x in &tab.pq {
+                    if !ctx.pdiv.contains(&x.0) || x.3.len() < minorder { continue; }
+                    let b = ((x.2 + 1.0) * 4096.0) as usize;
+                    for k in b.saturating_sub(1)..=b + 1 { ctx.sbin[k] = true; }
+                    if !ctx.scos.iter().any(|c| (c - x.2).abs() < 1e-9) { ctx.scos.push(x.2); }
+                }
                 ctx.axrot = ctx.pdiv.iter().map(|&p| rot_sc(u, tab.sc[p])).collect();
                 ctx.scratch.max_pieces = maxpieces;
                 let mut pieces = vec![(ctx.a, Xf::ident())];
