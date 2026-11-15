@@ -1,6 +1,6 @@
 """Tell the user about toroids in a run that no other run has. Called by the queue worker.
 
-Usage: queue_notify.py runs/NAME [--done]
+Usage: queue_notify.py runs/NAME [--done]   or   queue_notify.py --test
 A result is "new" if no other run under runs/ has one with the same group, genus, vertex, edge
 and face counts, circumradius and pieces. Each new one is reported once (queue/state/notified.txt).
 One notification per call, showing the simplest new toroid as a thumbnail.
@@ -45,7 +45,28 @@ def short(content):
     return content.replace("+", " + ")
 
 
+def selftest():
+    """Send one notification with a thumbnail now, from a result already in the repo."""
+    offs = sorted(glob.glob(os.path.join(root, "runs", "*", "off", "*.off")))
+    if not offs:
+        sys.exit("no .off file under runs/ to draw")
+    os.makedirs(os.path.join(state, "thumbs"), exist_ok=True)
+    png = os.path.join(state, "thumbs", "test.png")
+    sys.path.insert(0, here)
+    import render
+    render.render(offs[0], png)
+    print("thumbnail: %s (from %s)" % (png, os.path.relpath(offs[0], root)))
+    if platform.system() == "Darwin":
+        if shutil.which("terminal-notifier"):
+            print("backend: terminal-notifier (thumbnail shown; click opens the picture)")
+        else:
+            print("backend: osascript, which cannot show a picture. For thumbnails: brew install terminal-notifier")
+    notify("Test: new toroid", "This is what a find looks like. If there is no picture, see the terminal output.", png)
+
+
 def main():
+    if "--test" in sys.argv:
+        return selftest()
     run = os.path.normpath(sys.argv[1])
     done = "--done" in sys.argv
     os.makedirs(os.path.join(state, "thumbs"), exist_ok=True)

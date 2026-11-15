@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Send one test notification with a thumbnail right now"
+set -euo pipefail
+NOTIFY=1 python3 scripts/queue_notify.py --test

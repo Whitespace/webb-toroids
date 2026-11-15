@@ -110,6 +110,9 @@ Settings go in `queue/config.local` (see `queue/config.example`): `THREADS` (def
 `BACKGROUND` (macOS background QoS through `taskpolicy -b`, which keeps the work on the
 efficiency cores), `PULL`, `PUSH` (push finished runs, off by default), `NOTIFY`.
 
+`mise run queue:notify-test` sends one notification with a thumbnail straight away and says which
+backend it used, so you can check the setup without waiting for a find.
+
 While a job runs, `scripts/queue_notify.py` looks once a minute for results that no other run
 under `runs/` has, and posts one desktop notification for them with a thumbnail of the simplest
 (`scripts/render.py`, a small numpy rasteriser). Thumbnails and logs are in `queue/state/`.
