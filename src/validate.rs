@@ -190,6 +190,10 @@ pub struct Scratch {
     /// --max-pieces: reject larger orbits outright (0 pieces allowed never happens; MAX = no limit)
     pub max_pieces: usize,
     /// probe mode: stop with Err("probe-pass") once the outermost-vertex screen has passed
+    /// the first `clean` representatives are known not to overlap each other's images under this
+    /// group (inscribed spheres), so those pairs are not tested again
+    pub clean: usize,
+    axk: Vec<u32>,
     pub probe: bool,
     /// the outermost vertex the last call used, and its squared distance from the centre
     pub vs: V3,
@@ -351,12 +355,11 @@ pub struct Res {
     pub reason: &'static str,
 }
 
-/// Build the orbit of reps under the group in sc.grp, check it is a valid embedded closed surface,
-/// and measure it. Err(reason) on rejection.
+/// The orbit as piece centres, with the cheapest rejections: the centre inside a piece, inscribed
+/// spheres of a representative and an image overlapping, too many pieces. Returns the bitmask of
+/// representatives that sit on a rotation axis.
 #[cfg_attr(feature = "prof", inline(never))]
-pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool, sc: &mut Scratch) -> Result<Res, &'static str> {
-    let Scratch { grp, ent, on, hull, dirs, facets, done, planes, stab, skip, elist, max_pieces, probe, vs: pvs, far: pfar } = sc;
-    let grp: &[Xf] = grp;
+fn orbit(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, grp: &[Xf], ent: &mut Vec<Ent>, stab: &mut Vec<(u32, u32)>, axk: &mut Vec<u32>, clean: usize, max_pieces: usize) -> Result<u64, &'static str> {
     // the centre strictly inside an off-centre piece means that piece meets its own images
     for &(s, x) in reps {
         let o = mv(&mt(&x.r), sub(centre, x.t));
@@ -373,7 +376,8 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool
     for (gi, g) in grp.iter().enumerate().skip(1) {
         for (i, &(s, x)) in reps.iter().enumerate() {
             let c = g.ap(x.t);
-            for &(s2, x2) in reps {
+            for (j, &(s2, x2)) in reps.iter().enumerate() {
+                if i < clean && j < clean { continue; }
                 let d = sub(x2.t, c);
                 let d2 = dot(d, d);
                 let r = lib[s2].inr + lib[s].inr - 1e-4;
@@ -388,73 +392,96 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool
     // (Images that land on a different representative are left in; the screens below do not
     // mind repeated points, and the collision test deals with them.)
     if onaxis != 0 {
+        // axk: where the kept copies of on-axis representatives are, so only those are compared
+        axk.clear();
+        for i in 0..nrep { if (onaxis >> i) & 1 == 1 { axk.push(i as u32); } }
         let mut k = nrep;
         for i in nrep..ent.len() {
             let e = ent[i];
-            let dup = (onaxis >> e.rep) & 1 == 1 && ent[..k].iter().any(|f| f.rep == e.rep && { let d = sub(f.c, e.c); dot(d, d) < 1e-8 });
-            if !dup { ent[k] = e; k += 1; }
+            let ax = (onaxis >> e.rep) & 1 == 1;
+            let dup = ax && axk.iter().any(|&j| { let f = &ent[j as usize]; f.rep == e.rep && { let d = sub(f.c, e.c); dot(d, d) < 1e-8 } });
+            if !dup { if ax { axk.push(k as u32); } ent[k] = e; k += 1; }
         }
         ent.truncate(k);
     }
-    if ent.len() > *max_pieces { return Err("too-big"); }
+    if ent.len() > max_pieces { return Err("too-big"); }
+    Ok(onaxis)
+}
+
+/// (Q) screen at the outermost vertex; see the comment where it is called.
+#[cfg_attr(feature = "prof", inline(never))]
+fn outer_screen(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, grp: &[Xf], ent: &[Ent], dirs: &mut Vec<V3>, facets: &mut Vec<V3>, pvs: &mut V3, pfar: &mut f64) -> Result<(), &'static str> {
+    let mut vs = centre;
+    let mut far = -1.0;
+    for &(s, x) in reps {
+        let o = mtv(&x.r, sub(centre, x.t));
+        let so = &lib[s].soa;
+        let m = so.far2(o);
+        if m > far {
+            far = m;
+            let k = (0..so.n).find(|&k| d2(o, so.x[k], so.y[k], so.z[k]) >= m).unwrap_or(0);
+            vs = x.ap(lib[s].v[k]);
+        }
+    }
+    *pvs = vs;
+    *pfar = far;
+    dirs.clear();
+    for e in ent.iter() {
+        let dc = sub(e.c, vs);
+        let lim = e.rad + 1.0 + 1e-6;
+        if dot(dc, dc) > lim * lim { continue; }
+        let (rx, gr) = (&reps[e.rep as usize].1.r, &grp[e.g as usize].r);
+        let o = loc(rx, gr, scale(dc, -1.0));
+        let so = &lib[e.s as usize].soa;
+        if !so.any_unit(o, 2e-6) { continue; }
+        for k in 0..so.n {
+            if (d2(o, so.x[k], so.y[k], so.z[k]) - 1.0).abs() < 2e-6 {
+                let d = wor(rx, gr, [so.x[k] - o[0], so.y[k] - o[1], so.z[k] - o[2]]);
+                if !dirs.iter().any(|x| dist(*x, d) < 1e-6) { dirs.push(d); }
+            }
+        }
+    }
+    facets.clear();
+    for i in 0..dirs.len() {
+        for j in 0..i {
+            let n = cross(dirs[i], dirs[j]);
+            if norm(n) < 1e-7 { continue; }
+            let n = unit(n);
+            let (mut pos, mut neg) = (false, false);
+            for d in dirs.iter() { let x = dot(*d, n); if x > 1e-7 { pos = true; } if x < -1e-7 { neg = true; } }
+            if pos && neg { continue; }
+            let n = if pos { scale(n, -1.0) } else { n };
+            if !facets.iter().any(|f| dist(*f, n) < 1e-6) { facets.push(n); }
+        }
+    }
+    if facets.len() < 3 { return Err("q-prescreen"); }
+    for e in ent.iter() {
+        let dc = sub(e.c, vs);
+        let (rx, gr) = (&reps[e.rep as usize].1.r, &grp[e.g as usize].r);
+        for n in facets.iter() {
+            let off = dot(dc, *n);
+            if off + e.rad <= 1e-6 { continue; }
+            if lib[e.s as usize].soa.proj_max(loc(rx, gr, *n)) + off > 1e-6 { return Err("q-prescreen"); }
+        }
+    }
+    Ok(())
+}
+
+/// Build the orbit of reps under the group in sc.grp, check it is a valid embedded closed surface,
+/// and measure it. Err(reason) on rejection.
+#[cfg_attr(feature = "prof", inline(never))]
+pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool, sc: &mut Scratch) -> Result<Res, &'static str> {
+    let Scratch { grp, ent, on, hull, dirs, facets, done, planes, stab, skip, elist, max_pieces, probe, vs: pvs, far: pfar, clean, axk } = sc;
+    let clean = *clean;
+    let grp: &[Xf] = grp;
+    let nrep = reps.len();
+    let onaxis = orbit(lib, reps, centre, grp, ent, stab, axk, clean, *max_pieces)?;
     // The (Q) screens run before the collision test: they are cheaper and reject almost everything.
     // (Q) pre-screen at the outermost vertex, which is certainly a hull vertex: its unit-distance
     // neighbours must span a cone containing every other vertex, or some hull edge there is not unit.
     // By symmetry the outermost vertex can be taken on a representative.
     if prescreen {
-        let mut vs = centre;
-        let mut far = -1.0;
-        for &(s, x) in reps {
-            let o = mtv(&x.r, sub(centre, x.t));
-            let so = &lib[s].soa;
-            let m = so.far2(o);
-            if m > far {
-                far = m;
-                let k = (0..so.n).find(|&k| d2(o, so.x[k], so.y[k], so.z[k]) >= m).unwrap_or(0);
-                vs = x.ap(lib[s].v[k]);
-            }
-        }
-        *pvs = vs;
-        *pfar = far;
-        dirs.clear();
-        for e in ent.iter() {
-            let dc = sub(e.c, vs);
-            let lim = e.rad + 1.0 + 1e-6;
-            if dot(dc, dc) > lim * lim { continue; }
-            let (rx, gr) = (&reps[e.rep as usize].1.r, &grp[e.g as usize].r);
-            let o = loc(rx, gr, scale(dc, -1.0));
-            let so = &lib[e.s as usize].soa;
-            if !so.any_unit(o, 2e-6) { continue; }
-            for k in 0..so.n {
-                if (d2(o, so.x[k], so.y[k], so.z[k]) - 1.0).abs() < 2e-6 {
-                    let d = wor(rx, gr, [so.x[k] - o[0], so.y[k] - o[1], so.z[k] - o[2]]);
-                    if !dirs.iter().any(|x| dist(*x, d) < 1e-6) { dirs.push(d); }
-                }
-            }
-        }
-        facets.clear();
-        for i in 0..dirs.len() {
-            for j in 0..i {
-                let n = cross(dirs[i], dirs[j]);
-                if norm(n) < 1e-7 { continue; }
-                let n = unit(n);
-                let (mut pos, mut neg) = (false, false);
-                for d in dirs.iter() { let x = dot(*d, n); if x > 1e-7 { pos = true; } if x < -1e-7 { neg = true; } }
-                if pos && neg { continue; }
-                let n = if pos { scale(n, -1.0) } else { n };
-                if !facets.iter().any(|f| dist(*f, n) < 1e-6) { facets.push(n); }
-            }
-        }
-        if facets.len() < 3 { return Err("q-prescreen"); }
-        for e in ent.iter() {
-            let dc = sub(e.c, vs);
-            let (rx, gr) = (&reps[e.rep as usize].1.r, &grp[e.g as usize].r);
-            for n in facets.iter() {
-                let off = dot(dc, *n);
-                if off + e.rad <= 1e-6 { continue; }
-                if lib[e.s as usize].soa.proj_max(loc(rx, gr, *n)) + off > 1e-6 { return Err("q-prescreen"); }
-            }
-        }
+        outer_screen(lib, reps, centre, grp, ent, dirs, facets, pvs, pfar)?;
         if *probe { return Err("probe-pass"); }
     }
     // (Q) necessary condition on bare points, no mesh: every hull face found through a

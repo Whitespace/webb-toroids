@@ -188,7 +188,6 @@ struct Ctx<'a> {
     pdiv: Vec<usize>,
     /// a centre s*u with s strictly inside this interval is strictly inside the seed piece
     inside: (f64, f64),
-    csbuf: Vec<f64>,
     st: Stats,
     /// rotations about the seed axis, one per usable order; known before the chain is built
     axrot: Vec<M3>,
@@ -215,6 +214,8 @@ struct Ctx<'a> {
     ey: V3,
     pre_ov: u64,
     pre_q: u64,
+    /// the last link of the chain while `join_apply` is working on it: (solid, face in, turn, face out)
+    pend: Option<(usize, usize, usize, usize)>,
     cand: Vec<(u32, u32)>,
 }
 
@@ -311,18 +312,39 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
     ctx.st.tests += ents.len() as u64;
     ctx.st.calls += 1;
     if ctx.st.calls & 0xfff == 0 { ctx.st.flush(); }
-    // cos of the angle between the seed axis and every candidate axis, in one vector pass
-    let mut buf = std::mem::take(&mut ctx.csbuf);
+    // the angle between the seed axis and every candidate axis, binned in one vector pass; the
+    // bitmap holds the angles some group recipe accepts for this seed
+    let mut bins = std::mem::take(&mut ctx.bins);
     let [wx, wy, wz] = &tab.axw[n];
-    buf.resize(wx.len(), 0.0);
-    simd::dots(u, wx, wy, wz, &mut buf);
-    for i in 0..ents.len() {
-        let cs = buf[i];
-        let c = cs.abs();
-        if !tab.cosbin[(c * 4096.0) as usize] { continue; }
-        entry(ctx, w, o, u, n, i, cs, pieces);
+    bins.resize(wx.len(), 0);
+    simd::bins(u, wx, wy, wz, &mut bins);
+    for ci in 0..bins.len() / simd::W {
+        if !bins[ci * simd::W..(ci + 1) * simd::W].iter().fold(false, |a, &b| a | ctx.sbin[b as usize & 0xffff]) { continue; }
+        for i in ci * simd::W..((ci + 1) * simd::W).min(ents.len()) {
+            if !ctx.sbin[bins[i] as usize & 0xffff] { continue; }
+            entry(ctx, w, o, u, n, i, dot(u, ents[i].w), pieces);
+        }
     }
-    ctx.csbuf = buf;
+    ctx.bins = bins;
+}
+
+/// Quick reject: inscribed spheres of chain pieces against their images under the generators.
+/// Pairs among the first `clean` pieces are known not to overlap and are skipped.
+#[cfg_attr(feature = "prof", inline(never))]
+fn quick(lib: &[Solid], gens: &[Xf; 2], pieces: &[(usize, Xf)], clean: usize) -> bool {
+    for g in gens {
+        for (i1, &(s1, x1)) in pieces.iter().enumerate() {
+            let c = g.ap(x1.t);
+            for (i2, &(s2, x2)) in pieces.iter().enumerate() {
+                if i1 < clean && i2 < clean { continue; }
+                let r = lib[s1].inr + lib[s2].inr - 1e-4;
+                let d = sub(c, x2.t);
+                let d2 = dot(d, d);
+                if d2 > 1e-10 && d2 < r * r { return true; }
+            }
+        }
+    }
+    false
 }
 
 /// One end piece: entry `i` of `ax[n]` on the open face with frame `w`. `o`, `u` are the seed axis
@@ -361,6 +383,8 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                 // Many hits at one node generate the same group, and most die on what the chain
                 // prefix does under it, whatever comes after. So that is worked out once per group.
                 let (rv, m) = tab.pqk[ri];
+                // how many leading pieces the cache has shown not to overlap their own images
+                let mut clean = 0;
                 if ctx.share && m > 0 {
                     let e2 = unit(sub(wb, scale(ctx.u, cs)));
                     let e3 = cross(ctx.u, e2);
@@ -391,33 +415,25 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                         assert!(el.len() == grp.len() && el.iter().all(|a| grp.iter().any(|b| mclose(&a.r, &b.r, 1e-6) && dist(a.t, b.t) < 1e-6)), "group cache key is not canonical");
                     }
                     if ge.verdict == 1 { ctx.pre_ov += 1; continue; }
+                    clean = ctx.gc_np;
                     if ge.verdict == 2 && ctx.near == 0 && pieces[ctx.gc_np..].iter().all(|(s, x)| validate::extra_clear(ctx.lib, *s, x, centre, grp, ge.vs, ge.far)) { ctx.pre_q += 1; continue; }
                 }
-                // quick reject: inscribed spheres of chain pieces against their images under the generators
-                let mut quick = false;
-                'q: for g in &gens {
-                    for &(s1, x1) in pieces.iter() {
-                        let c = g.ap(x1.t);
-                        for &(s2, x2) in pieces.iter() {
-                            let r = ctx.lib[s1].inr + ctx.lib[s2].inr - 1e-4;
-                            let d = sub(c, x2.t);
-                            let d2 = dot(d, d);
-                            if d2 > 1e-10 && d2 < r * r { quick = true; break 'q; }
-                        }
-                    }
-                }
-                if quick { ctx.st.quick += 1; continue; }
+                if quick(ctx.lib, &gens, pieces, clean) { ctx.st.quick += 1; continue; }
                 let t0 = std::time::Instant::now();
                 from_recipe(&gens, rec, &mut ctx.scratch.grp);
+                ctx.scratch.clean = clean;
                 let res = validate::validate(ctx.lib, pieces, centre, ctx.near == 0, &mut ctx.scratch);
+                ctx.scratch.clean = 0;
                 let ns = t0.elapsed().as_nanos() as u64;
                 ctx.st.val_ns += ns;
                 if let Err(r) = &res { let k = RNAMES.iter().position(|x| x == r).unwrap_or(11); ctx.st.r[k] += 1; ctx.st.rns[k] += ns; }
                 if res.is_ok() {
+                    if let Some((ls, lg, lk, lh)) = ctx.pend { ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[ls].name, lg, lk, lh)); }
                     ctx.desc.push(format!("{}[f{} k{} ax{}]", ctx.lib[e.solid].name, e.face, e.k, e.order));
                     let reps: Vec<(usize, Xf)> = pieces.clone();
                     record(ctx, &reps, &gens, centre, res);
                     ctx.desc.pop();
+                    if ctx.pend.is_some() { ctx.desc.pop(); }
                 } else if let Err(r) = res { *ctx.reasons.entry(r).or_insert(0) += 1; }
             }
         }
@@ -463,6 +479,36 @@ fn prune(ctx: &Ctx, sl: usize, cl: V3, pieces: &[(usize, Xf)]) -> bool {
         return false;
     }
     true
+}
+
+/// Second half of `join`: the surviving (link, end piece) pairs, link by link, through the exact tests.
+#[cfg_attr(feature = "prof", inline(never))]
+fn join_apply(ctx: &mut Ctx, w: &Xf, list: &[Link], cand: &[(u32, u32)], pieces: &mut Vec<(usize, Xf)>) {
+    let tab = ctx.tab;
+    let mut i = 0;
+    while i < cand.len() {
+        let li = cand[i].0;
+        let mut j = i;
+        while j < cand.len() && cand[j].0 == li { j += 1; }
+        let l = &list[li as usize];
+        let xl = w.mul(&l.xp);
+        if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; i = j; continue; }
+        pieces.push((l.solid, xl));
+        // the link's part of the chain description is only written out if a result needs it
+        ctx.pend = Some((l.solid, l.g, l.k, l.h));
+        let w2 = w.mul(&l.exit);
+        let wi2 = w2.inv();
+        let (o2, u2) = (wi2.t, mv(&wi2.r, ctx.u));
+        for k in i..j {
+            let ei = cand[k].1 as usize;
+            let cs = dot(u2, tab.ax[l.hn][ei].w);
+            if !tab.cosbin[(cs.abs() * 4096.0) as usize] { continue; }
+            entry(ctx, &w2, o2, u2, l.hn, ei, cs, pieces);
+        }
+        ctx.pend = None;
+        pieces.pop();
+        i = j;
+    }
 }
 
 /// The last chain level, without visiting every link. Gives exactly what one more level of
@@ -519,29 +565,7 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
     ctx.st.calls += 1;
     if ctx.st.calls & 0xff == 0 { ctx.st.flush(); }
     cand.sort_unstable();
-    let mut i = 0;
-    while i < cand.len() {
-        let li = cand[i].0;
-        let mut j = i;
-        while j < cand.len() && cand[j].0 == li { j += 1; }
-        let l = &list[li as usize];
-        let xl = w.mul(&l.xp);
-        if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; i = j; continue; }
-        pieces.push((l.solid, xl));
-        ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[l.solid].name, l.g, l.k, l.h));
-        let w2 = w.mul(&l.exit);
-        let wi2 = w2.inv();
-        let (o2, u2) = (wi2.t, mv(&wi2.r, ctx.u));
-        for k in i..j {
-            let ei = cand[k].1 as usize;
-            let cs = dot(u2, tab.ax[l.hn][ei].w);
-            if !tab.cosbin[(cs.abs() * 4096.0) as usize] { continue; }
-            entry(ctx, &w2, o2, u2, l.hn, ei, cs, pieces);
-        }
-        ctx.desc.pop();
-        pieces.pop();
-        i = j;
-    }
+    join_apply(ctx, w, list, &cand, pieces);
     ctx.bins = bins;
     ctx.cand = cand;
     ctx.scos = scos;
@@ -706,8 +730,8 @@ fn main() {
                 }
                 let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
-                    pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, csbuf: Vec::new(), st: Default::default(),
-                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, bins: Vec::new(), scos: Vec::new(), cand: Vec::new() };
+                    pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, st: Default::default(),
+                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), cand: Vec::new() };
                 for x in &tab.pq {
                     if !ctx.pdiv.contains(&x.0) || x.3.len() < minorder { continue; }
                     let b = ((x.2 + 1.0) * 4096.0) as usize;

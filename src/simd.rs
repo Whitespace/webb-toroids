@@ -108,15 +108,6 @@ pub fn d2(o: V3, x: f64, y: f64, z: f64) -> f64 {
     dx * dx + dy * dy + dz * dz
 }
 
-/// out[i] = u . w[i] over SoA direction tables (lengths padded to a multiple of W).
-#[cfg_attr(not(feature = "prof"), inline)]
-#[cfg_attr(feature = "prof", inline(never))]
-pub fn dots(u: V3, wx: &[f64], wy: &[f64], wz: &[f64], out: &mut [f64]) {
-    for (((x, y), z), o) in wx.chunks_exact(W).zip(wy.chunks_exact(W)).zip(wz.chunks_exact(W)).zip(out.chunks_exact_mut(W)) {
-        for l in 0..W { o[l] = u[0] * x[l] + u[1] * y[l] + u[2] * z[l]; }
-    }
-}
-
 /// out[i] = bin of u . w[i], with [-1, 1] cut into 8192 bins, for a table lookup on the angle.
 #[cfg_attr(not(feature = "prof"), inline)]
 #[cfg_attr(feature = "prof", inline(never))]
