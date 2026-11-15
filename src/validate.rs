@@ -43,6 +43,7 @@ fn gap_on(a: &Placed, b: &Placed, ax: V3) -> f64 {
 
 /// Separation test. Returns (gap, axis): gap >= -EPS means the axis separates (touching if |gap| <= EPS);
 /// gap < -EPS means the interiors overlap.
+#[cfg_attr(feature = "prof", inline(never))]
 pub fn sat(a: &Placed, b: &Placed) -> (f64, V3) {
     let z = [0.0; 3];
     let cc = sub(b.c, a.c);
@@ -82,6 +83,7 @@ pub fn sat(a: &Placed, b: &Placed) -> (f64, V3) {
 
 /// Touching pieces separated by plane normal n: true if the contact is anything other than whole
 /// shared faces/edges/vertices. Only vertices and edges lying in the contact plane can take part.
+#[cfg_attr(feature = "prof", inline(never))]
 fn improper(lib: &[Solid], a: &Placed, b: &Placed, n: V3) -> bool {
     let pa: Vec<f64> = a.v.iter().map(|v| dot(*v, n)).collect();
     let pb: Vec<f64> = b.v.iter().map(|v| dot(*v, n)).collect();
@@ -198,6 +200,7 @@ pub struct Scratch {
 /// if adding the piece (s, x) cannot change that. It must lie strictly closer to the centre than
 /// `vs`, and no image of it may have a vertex one edge length from `vs`. Then the full orbit has
 /// the same outermost vertex and the same unit edges there, so it fails in the same way.
+#[cfg_attr(feature = "prof", inline(never))]
 pub fn extra_clear(lib: &[Solid], s: usize, x: &Xf, centre: V3, grp: &[Xf], vs: V3, far: f64) -> bool {
     let so = &lib[s].soa;
     if so.far2(mtv(&x.r, sub(centre, x.t))) > far - 1e-9 { return false; }
@@ -259,6 +262,7 @@ impl Wedge {
 /// from the piece's own dihedral angle. After that a piece whose bounding sphere lies inside
 /// the wedge is skipped outright, the rest go through the vector wedge test, and only a piece
 /// with a vertex that can change the wedge is scanned vertex by vertex.
+#[cfg_attr(feature = "prof", inline(never))]
 fn support_planes_orbit(lib: &[Solid], reps: &[(usize, Xf)], grp: &[Xf], ent: &[Ent], u: V3, v: V3, wing: [V3; 2], centre: V3, out: &mut Vec<(V3, f64)>) {
     out.clear();
     let d = unit(sub(v, u));
@@ -349,6 +353,7 @@ pub struct Res {
 
 /// Build the orbit of reps under the group in sc.grp, check it is a valid embedded closed surface,
 /// and measure it. Err(reason) on rejection.
+#[cfg_attr(feature = "prof", inline(never))]
 pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool, sc: &mut Scratch) -> Result<Res, &'static str> {
     let Scratch { grp, ent, on, hull, dirs, facets, done, planes, stab, skip, elist, max_pieces, probe, vs: pvs, far: pfar } = sc;
     let grp: &[Xf] = grp;

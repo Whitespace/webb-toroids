@@ -127,6 +127,7 @@ pub fn closure_recipe(gens: &[Xf], cap: usize) -> Option<Vec<(usize, usize)>> {
     Some(rec)
 }
 /// Rebuild the group from a recipe into a reused buffer.
+#[cfg_attr(feature = "prof", inline(never))]
 pub fn from_recipe(gens: &[Xf], rec: &[(usize, usize)], el: &mut Vec<Xf>) {
     el.clear();
     el.push(Xf::ident());

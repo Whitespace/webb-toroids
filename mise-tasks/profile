@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#MISE description="Profile a fixed workload: mise run profile [bent|struts|straight] [THREADS] [SECONDS]. Report goes to profiles/."
+# Builds a separate binary (target/profiling, feature "prof": line tables on, the mid-level
+# functions kept out of line), starts the workload, samples it for SECONDS, then stops it.
+# macOS: uses /usr/bin/sample (nothing to install). Linux: uses perf if it is there.
+# The report also carries the search's own per-reason cpu counters (the "watch" lines).
+set -euo pipefail
+which="${1:-bent}"
+threads="${2:-2}"
+secs="${3:-20}"
+case "$which" in
+  bent)     args="--depth 2 --any 2 --max-faces 14 --max-radius 6.2 --max-pieces 152" ;;
+  struts)   args="--depth 3 --any 1 --links struts --max-radius 6.2 --max-pieces 152" ;;
+  straight) args="--depth 2 --any 0" ;;
+  *) echo "unknown workload '$which' (bent, struts, straight)" >&2; exit 2 ;;
+esac
+CARGO_PROFILE_RELEASE_DEBUG=line-tables-only cargo build --release --features prof --target-dir target/profiling
+mkdir -p profiles
+stamp="$(date +%Y%m%d-%H%M%S)"
+rep="profiles/${stamp}-${which}-t${threads}.txt"
+out="target/profiling/out-${which}"
+log="target/profiling/${which}.log"
+# shellcheck disable=SC2086
+WATCH=1 target/profiling/release/webb-toroids $args --threads "$threads" --out "$out" > "$log" 2>&1 &
+pid=$!
+trap 'kill "$pid" 2>/dev/null || true' EXIT
+sleep 3
+{
+  echo "workload: $which  args: $args  threads: $threads  seconds: $secs"
+  echo "commit: $(git rev-parse --short HEAD)  machine: $(uname -srm)"
+  if [ "$(uname)" = Darwin ]; then sysctl -n machdep.cpu.brand_string 2>/dev/null || true; fi
+  echo
+} > "$rep"
+if [ "$(uname)" = Darwin ]; then
+  sample "$pid" "$secs" -mayDie -file "target/profiling/${which}.sample" >/dev/null 2>&1 || true
+  if [ -f "target/profiling/${which}.sample" ]; then cat "target/profiling/${which}.sample" >> "$rep"; else echo "sample produced no report" >> "$rep"; fi
+elif command -v perf >/dev/null 2>&1; then
+  perf record -q -g -p "$pid" -o "target/profiling/${which}.perf" -- sleep "$secs" >/dev/null 2>&1 || true
+  perf report -i "target/profiling/${which}.perf" --stdio --no-children 2>/dev/null | grep -v '^$' >> "$rep" || echo "perf produced no report" >> "$rep"
+else
+  echo "no sampler on this system (need macOS sample or Linux perf); counters only" >> "$rep"
+  sleep "$secs"
+fi
+kill "$pid" 2>/dev/null || true
+wait "$pid" 2>/dev/null || true
+trap - EXIT
+{
+  echo
+  echo "--- search counters (last watch lines, or the done line if it finished)"
+  grep -E '^(watch|  |done|join|solids)' "$log" > "target/profiling/${which}.counters" || true
+  tail -n 4 "target/profiling/${which}.counters"
+} >> "$rep"
+echo "wrote $rep ($(wc -l < "$rep") lines). To share it: git add $rep && git commit -m 'profile $which' && git push"

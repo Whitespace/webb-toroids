@@ -122,6 +122,16 @@ notification itself. The worker loop, naming, novelty check, thumbnails and comm
 tested on Linux. If the repository lives under Documents, Desktop or Downloads, macOS may
 block a launchd agent from reading it until bash is given Full Disk Access.
 
+## Profiling
+
+    mise run profile            # bent chains, 2 threads, 20 s of samples
+    mise run profile struts 2 60
+
+builds a second binary under `target/profiling` (line tables on, feature `prof` keeps the
+mid-level functions out of line so they show up separately), runs a fixed workload, samples it
+(`sample` on macOS, `perf` on Linux) and writes a text report to `profiles/`, with the search's
+own per-reason cpu counters at the end. Workloads: `bent`, `struts`, `straight`.
+
 ## How it works
 
 A seed solid sits on one of its own rotation axes of order 3, 4 or 5. A chain of solids glued

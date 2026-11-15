@@ -259,6 +259,7 @@ pub fn write_off(path: &str, r: &validate::Res, lib: &[Solid]) {
     std::fs::write(path, s).unwrap();
 }
 
+#[cfg_attr(feature = "prof", inline(never))]
 fn record(ctx: &mut Ctx, reps: &[(usize, Xf)], gens: &[Xf], centre: V3, res: Result<validate::Res, &'static str>) {
     let r = match res {
         Err(e) => { *ctx.reasons.entry(e).or_insert(0) += 1; return; }
@@ -297,6 +298,7 @@ fn record(ctx: &mut Ctx, reps: &[(usize, Xf)], gens: &[Xf], centre: V3, res: Res
     writeln!(sh.ckpt, "sig {}\t{}", id, sig).unwrap();
 }
 
+#[cfg_attr(feature = "prof", inline(never))]
 fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
     if !ctx.gce.is_empty() { ctx.gc.clear(); ctx.gce.clear(); ctx.gcg.clear(); }
     ctx.gc_np = pieces.len();
@@ -325,6 +327,7 @@ fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
 
 /// One end piece: entry `i` of `ax[n]` on the open face with frame `w`. `o`, `u` are the seed axis
 /// (a point and the direction) in that frame, `cs` the cos of the angle between the two axes.
+#[cfg_attr(feature = "prof", inline(never))]
 fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, pieces: &mut Vec<(usize, Xf)>) {
     let tab = ctx.tab;
     let c = cs.abs();
@@ -427,6 +430,7 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
 /// the link is too far from the seed axis (--max-radius); its inscribed sphere overlaps that of
 /// an earlier chain piece; or, for every usable rotation about the seed axis, it overlaps an
 /// image of a chain piece (the same test as the quick reject, done before the subtree is built).
+#[cfg_attr(feature = "prof", inline(never))]
 fn prune(ctx: &Ctx, sl: usize, cl: V3, pieces: &[(usize, Xf)]) -> bool {
     let u = ctx.u;
     let off = sub(cl, scale(u, dot(cl, u)));
@@ -466,6 +470,7 @@ fn prune(ctx: &Ctx, sl: usize, cl: V3, pieces: &[(usize, Xf)]) -> bool {
 /// share an exit rotation see the seed axis in the same direction, so the direction table of the
 /// exit polygon is scanned once per rotation class; only the few pairs whose axes make an
 /// allowed angle and are coplanar (loose tolerances here, the exact ones in `entry`) go further.
+#[cfg_attr(feature = "prof", inline(never))]
 fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
     let tab = ctx.tab;
     let (list, classes) = if any_left == 0 { (&tab.thru[n], &tab.rc[0][n]) } else { (&tab.links[n], &tab.rc[1][n]) };

@@ -25,7 +25,8 @@ impl Soa {
     }
 
     /// max over vertices of a . v
-    #[inline]
+    #[cfg_attr(not(feature = "prof"), inline)]
+    #[cfg_attr(feature = "prof", inline(never))]
     pub fn proj_max(&self, a: V3) -> f64 {
         let mut m = [f64::MIN; W];
         for ((x, y), z) in self.x.chunks_exact(W).zip(self.y.chunks_exact(W)).zip(self.z.chunks_exact(W)) {
@@ -40,7 +41,8 @@ impl Soa {
     }
 
     /// max over vertices of |v - o|^2
-    #[inline]
+    #[cfg_attr(not(feature = "prof"), inline)]
+    #[cfg_attr(feature = "prof", inline(never))]
     pub fn far2(&self, o: V3) -> f64 {
         let mut m = [f64::MIN; W];
         for ((x, y), z) in self.x.chunks_exact(W).zip(self.y.chunks_exact(W)).zip(self.z.chunks_exact(W)) {
@@ -55,7 +57,8 @@ impl Soa {
     }
 
     /// true if some vertex is at distance 1 (to tol on the square) from o
-    #[inline]
+    #[cfg_attr(not(feature = "prof"), inline)]
+    #[cfg_attr(feature = "prof", inline(never))]
     pub fn any_unit(&self, o: V3, tol: f64) -> bool {
         let mut any = false;
         for ((x, y), z) in self.x.chunks_exact(W).zip(self.y.chunks_exact(W)).zip(self.z.chunks_exact(W)) {
@@ -70,7 +73,8 @@ impl Soa {
     /// Returns false only if no vertex could change the scan's state: every q lies inside the
     /// wedge from l round to h (cross(h,q) <= 0, cross(l,q) >= 0) and none is antiparallel to r.
     /// A side that has no bound yet (`has_h` / `has_l` false) must have no vertex at all.
-    #[inline]
+    #[cfg_attr(not(feature = "prof"), inline)]
+    #[cfg_attr(feature = "prof", inline(never))]
     pub fn wedge_out(&self, a: V3, a0: f64, b: V3, b0: f64, h: (f64, f64), has_h: bool, lo: (f64, f64), has_l: bool, r: (f64, f64)) -> bool {
         let k = 1e-13 * (r.0 * r.0 + r.1 * r.1);
         for ((x, y), z) in self.x.chunks_exact(W).zip(self.y.chunks_exact(W)).zip(self.z.chunks_exact(W)) {
@@ -105,7 +109,8 @@ pub fn d2(o: V3, x: f64, y: f64, z: f64) -> f64 {
 }
 
 /// out[i] = u . w[i] over SoA direction tables (lengths padded to a multiple of W).
-#[inline]
+#[cfg_attr(not(feature = "prof"), inline)]
+#[cfg_attr(feature = "prof", inline(never))]
 pub fn dots(u: V3, wx: &[f64], wy: &[f64], wz: &[f64], out: &mut [f64]) {
     for (((x, y), z), o) in wx.chunks_exact(W).zip(wy.chunks_exact(W)).zip(wz.chunks_exact(W)).zip(out.chunks_exact_mut(W)) {
         for l in 0..W { o[l] = u[0] * x[l] + u[1] * y[l] + u[2] * z[l]; }
@@ -113,7 +118,8 @@ pub fn dots(u: V3, wx: &[f64], wy: &[f64], wz: &[f64], out: &mut [f64]) {
 }
 
 /// out[i] = bin of u . w[i], with [-1, 1] cut into 8192 bins, for a table lookup on the angle.
-#[inline]
+#[cfg_attr(not(feature = "prof"), inline)]
+#[cfg_attr(feature = "prof", inline(never))]
 pub fn bins(u: V3, wx: &[f64], wy: &[f64], wz: &[f64], out: &mut [i32]) {
     for (((x, y), z), o) in wx.chunks_exact(W).zip(wy.chunks_exact(W)).zip(wz.chunks_exact(W)).zip(out.chunks_exact_mut(W)) {
         for l in 0..W {

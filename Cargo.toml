@@ -6,3 +6,7 @@ edition = "2021"
 [profile.release]
 opt-level = 3
 debug = false
+
+[features]
+# keeps the mid-level functions out of line so a sampling profiler can tell them apart (mise run profile)
+prof = []
