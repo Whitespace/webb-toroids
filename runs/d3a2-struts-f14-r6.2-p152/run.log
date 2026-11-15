@@ -1,0 +1,27 @@
+config depth=3 any=2 min-group=24 near=0 only=all seeds=all range=None nseeds=217 max-radius=6.2 links=struts max-faces=14 max-pieces=152
+through links [0, 0, 0, 2, 2, 2, 2, 0, 1, 0, 1]
+join: directions [0, 0, 0, 240, 112, 66, 44, 0, 29, 0, 12] rotation classes [0, 0, 0, 1277, 683, 156, 166, 0, 52, 0, 33] (through [0, 0, 0, 2, 2, 2, 2, 0, 1, 0, 1])
+solids 127 seeds 217 (0 already done) threads 2 axtab [0, 0, 0, 436, 268, 86, 85, 0, 37, 0, 13] links [0, 0, 0, 2245, 1203, 359, 355, 0, 53, 0, 33]
+seeds done 10/217 97s
+seeds done 20/217 170s
+seeds done 30/217 293s
+seeds done 40/217 401s
+seeds done 50/217 428s
+seeds done 60/217 451s
+seeds done 70/217 480s
+seeds done 80/217 556s
+seeds done 90/217 665s
+seeds done 100/217 768s
+seeds done 110/217 881s
+seeds done 120/217 953s
+seeds done 130/217 1097s
+seeds done 140/217 1218s
+seeds done 150/217 1292s
+seeds done 160/217 1364s
+seeds done 170/217 1423s
+seeds done 180/217 1476s
+seeds done 190/217 1540s
+seeds done 200/217 1606s
+seeds done 210/217 1667s
+seeds done 217/217 1729s
+done 1728.7s tests 370444541934 hits 234598897 unique 269 reasons {"contact": 50, "RAQT": 1481, "genus0": 67, "overlap-quick": 10177733, "pinch": 118, "overlap-sphere": 2199200, "q-prescreen": 23686961, "prefix-overlap": 134258749, "disconnected": 184, "valid": 1717, "nonmanifold": 139, "pruned-subtrees": 86392991, "overlap-chain": 2910, "overlap": 5274, "too-big": 1514929, "overlap-centre": 75435, "prefix-q": 60739294, "q-proxy": 1936137}
