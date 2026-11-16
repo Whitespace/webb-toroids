@@ -858,7 +858,9 @@ fn main() {
                 ctx.scratch.max_pieces = maxpieces;
                 let mut pieces = vec![(ctx.a, Xf::ident())];
                 let w = s.frames[f][0];
-                dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces);
+                // if even the closest allowed centre is beyond the radius limit, every hit of this seed
+                // would be a seed-overlap or out of range: nothing to search
+                if ctx.srex.iter().all(|r| r - 2e-6 > maxrad) { ctx.reasons.insert("seed-dead", 1); } else { dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces); }
                 ctx.st.flush();
                 if ctx.seed_ov > 0 { *ctx.reasons.entry("seed-overlap").or_insert(0) += ctx.seed_ov; }
                 if ctx.pre_ov > 0 { *ctx.reasons.entry("prefix-overlap").or_insert(0) += ctx.pre_ov; }
