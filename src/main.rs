@@ -252,6 +252,9 @@ struct Ctx<'a> {
     scos: Vec<f64>,
     /// for each of them, the second-axis orders some recipe accepts, as a bitmask
     sqm: Vec<u8>,
+    /// per entry of `scos`: the smallest `seed_rex` among the recipes at that angle
+    srex: Vec<f64>,
+    seed_ov: u64,
     /// Per-node cache: group (as a set) -> what the chain so far, without link or end piece
     /// still to come, does under it. Cleared in `test`, which every node runs first.
     share: bool,
@@ -290,6 +293,20 @@ impl Stats {
 /// verdict 1: the prefix orbit overlaps itself or is too big; 2: it fails the outermost-vertex
 /// screen at `vs`; 0: neither.
 struct GEnt { verdict: u8, vs: V3, far: f64, g0: usize, gl: usize, e0: usize, el: usize, s0: usize, sl: usize }
+
+/// The seed sits on a p-fold axis of the group at distance |s| from the centre, so its nearest
+/// copy sits on the neighbouring p-fold axis. Below this |s| their inscribed spheres overlap
+/// (the same test and tolerance as `validate`), whatever the rest of the chain does.
+fn seed_rex(inr: f64, p: usize, order: usize) -> f64 {
+    let ang: f64 = match (order, p) {
+        (24, 3) => (1.0f64 / 3.0).acos(),
+        (24, 4) => std::f64::consts::FRAC_PI_2,
+        (60, 3) => (5.0f64.sqrt() / 3.0).acos(),
+        (60, 5) => 2.0f64.atan(),
+        _ => return 0.0,
+    };
+    (inr - 5e-5) / (ang / 2.0).sin()
+}
 
 fn divisors(n: usize) -> Vec<usize> { [2usize, 3, 4, 5].iter().cloned().filter(|d| n % d == 0).collect() }
 
@@ -429,6 +446,7 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
             for &q in bq {
                 let ri = match tab.pq.iter().position(|x| x.0 == p && x.1 == q && (x.2 - cs).abs() < 1e-7 && x.3.len() >= ctx.minorder) { Some(x) => x, None => continue };
                 let rec = &tab.pq[ri].3;
+                if s.abs() < seed_rex(ctx.lib[ctx.a].inr, p, rec.len()) - 1e-6 { ctx.seed_ov += 1; continue; }
                 ctx.hits += 1;
                 ctx.st.hits += 1;
                 let gens = [Xf::about_sc(centre, ctx.u, tab.sc[p]), Xf::about_sc(centre, wb, tab.sc[q])];
@@ -601,6 +619,7 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
     let ssym: &[bool; 65536] = &ctx.ssym;
     let scos = std::mem::take(&mut ctx.scos);
     let sqm = std::mem::take(&mut ctx.sqm);
+    let srex = std::mem::take(&mut ctx.srex);
     let (maxrad, inside, ordered, seed) = (ctx.maxrad, ctx.inside, ctx.ordered, ctx.a);
     let mut cand = std::mem::take(&mut ctx.cand);
     cand.clear();
@@ -622,7 +641,7 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
                 // the exact angle test (the bins are coarse), then coplanarity on compact copies
                 let wd = [ud.w[0][d], ud.w[1][d], ud.w[2][d]];
                 let cs = dot(ul, wd);
-                let qmask = match scos.iter().position(|c| (c - cs).abs() < 1e-6) { Some(i) => sqm[i], None => continue };
+                let (qmask, rex) = match scos.iter().position(|c| (c - cs).abs() < 1e-6) { Some(i) => (sqm[i], srex[i] - 2e-6), None => continue };
                 let nn = cross(ul, wd);
                 let nn2 = dot(nn, nn);
                 let (l0, l1) = (ud.lstart[d] as usize, ud.lstart[d + 1] as usize);
@@ -636,7 +655,7 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
                         // meet at within the limits `entry` will apply (looser here, exact there)
                         if (dot(ud.lp[l], nn) - h).abs() >= 1e-5 { continue; }
                         let sc = dot(cross(sub(ud.lp[l], ol), wd), nn) / nn2;
-                        if sc.abs() < 5e-7 || sc.abs() > maxrad + 1e-6 || (sc > inside.0 + 1e-6 && sc < inside.1 - 1e-6) { continue; }
+                        if sc.abs() < rex || sc.abs() < 5e-7 || sc.abs() > maxrad + 1e-6 || (sc > inside.0 + 1e-6 && sc < inside.1 - 1e-6) { continue; }
                         for m in ud.lent[l] as usize..ud.lent[l + 1] as usize {
                             // the entry must have an axis order some recipe accepts at this angle,
                             // and pass the seed-ordering rule
@@ -658,6 +677,7 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
     ctx.cand = cand;
     ctx.scos = scos;
     ctx.sqm = sqm;
+    ctx.srex = srex;
 }
 
 fn dfs(ctx: &mut Ctx, w: &Xf, n: usize, depth: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
@@ -821,13 +841,14 @@ fn main() {
                 let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
                     pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, st: Default::default(),
-                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), sqm: Vec::new(), cand: Vec::new() };
+                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), sqm: Vec::new(), srex: Vec::new(), seed_ov: 0, cand: Vec::new() };
                 for x in &tab.pq {
                     if !ctx.pdiv.contains(&x.0) || x.3.len() < minorder { continue; }
                     let b = ((x.2 + 1.0) * 4096.0) as usize;
                     for k in b.saturating_sub(1)..=b + 1 { ctx.sbin[k] = true; }
-                    let k = match ctx.scos.iter().position(|c| (c - x.2).abs() < 1e-9) { Some(k) => k, None => { ctx.scos.push(x.2); ctx.sqm.push(0); ctx.scos.len() - 1 } };
+                    let k = match ctx.scos.iter().position(|c| (c - x.2).abs() < 1e-9) { Some(k) => k, None => { ctx.scos.push(x.2); ctx.sqm.push(0); ctx.srex.push(f64::MAX); ctx.scos.len() - 1 } };
                     ctx.sqm[k] |= 1 << x.1;
+                    ctx.srex[k] = ctx.srex[k].min(seed_rex(s.inr, x.0, x.3.len()));
                 }
                 for b in 0..=8192usize { ctx.ssym[b] = ctx.sbin[b] || ctx.sbin[8192 - b] || (b < 8192 && ctx.sbin[8191 - b]) || ctx.sbin[8193 - b.min(8193)]; }
                 let a = if u[0].abs() < 0.6 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
@@ -839,6 +860,7 @@ fn main() {
                 let w = s.frames[f][0];
                 dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces);
                 ctx.st.flush();
+                if ctx.seed_ov > 0 { *ctx.reasons.entry("seed-overlap").or_insert(0) += ctx.seed_ov; }
                 if ctx.pre_ov > 0 { *ctx.reasons.entry("prefix-overlap").or_insert(0) += ctx.pre_ov; }
                 if ctx.pre_q > 0 { *ctx.reasons.entry("prefix-q").or_insert(0) += ctx.pre_q; }
                 if ctx.pruned > 0 { *ctx.reasons.entry("pruned-subtrees").or_insert(0) += ctx.pruned; }
