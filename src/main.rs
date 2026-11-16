@@ -34,7 +34,10 @@ struct Link { solid: usize, g: usize, k: usize, h: usize, hn: usize, xp: Xf, exi
 /// `axw[n]` holds the axis directions of `ax[n]` as padded structure-of-arrays for the vector dot product.
 /// Distinct axis directions of `ax[n]` (padded structure-of-arrays) and, per direction, the entries that have it.
 #[derive(Default)]
-struct UDirs { w: [Vec<f64>; 3], n: usize, start: Vec<u32>, ent: Vec<u32>, p: Vec<V3> }
+/// Within a direction the entries are sorted by axis line: `lstart[d]..lstart[d+1]` are the lines of
+/// direction d, line i has a point `lp[i]` and the entries `lent[i]..lent[i+1]` of `ent`. `qm` is
+/// each entry's usable axis orders as a bitmask, `ge3` whether its first one is 3 or more.
+struct UDirs { w: [Vec<f64>; 3], n: usize, ent: Vec<u32>, lstart: Vec<u32>, lp: Vec<V3>, lent: Vec<u32>, qm: Vec<u8>, ge3: Vec<bool>, solid: Vec<u32> }
 /// Links of one list that share an exit rotation (and exit polygon): the seed axis direction in
 /// their exit frames is the same, so one scan of the direction table serves all of them.
 struct RotClass { r: M3, hn: usize, links: Vec<u32>, t: Vec<V3> }
@@ -123,11 +126,24 @@ fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -
         }
         let m = (dirs.len() + simd::W - 1) / simd::W * simd::W;
         let col = |i: usize| -> Vec<f64> { (0..m).map(|k| if k < dirs.len() { dirs[k][i] } else { 0.0 }).collect() };
-        let mut start = vec![0u32];
-        let mut ent = Vec::new();
-        for g in &mem { ent.extend_from_slice(g); start.push(ent.len() as u32); }
-        let p = ent.iter().map(|&i| v[i as usize].p).collect();
-        UDirs { w: [col(0), col(1), col(2)], n: dirs.len(), start, ent, p }
+        let (mut ent, mut lstart, mut lp, mut lent) = (Vec::new(), vec![0u32], Vec::new(), Vec::new());
+        for (d, g) in mem.iter().enumerate() {
+            // entries whose axes are the same line (same point up to a shift along the direction)
+            let wd = dirs[d];
+            let lkey = |i: u32| -> [i64; 3] { let p = v[i as usize].p; let q = sub(p, scale(wd, dot(p, wd))); [(q[0] * 1e7).round() as i64, (q[1] * 1e7).round() as i64, (q[2] * 1e7).round() as i64] };
+            let mut g: Vec<u32> = g.clone();
+            g.sort_by_key(|&i| (lkey(i), i));
+            for (k, &i) in g.iter().enumerate() {
+                if k == 0 || lkey(g[k - 1]) != lkey(i) { lp.push(v[i as usize].p); lent.push(ent.len() as u32); }
+                ent.push(i);
+            }
+            lstart.push(lp.len() as u32);
+        }
+        lent.push(ent.len() as u32);
+        let qm = ent.iter().map(|&i| { let e = &v[i as usize]; e.bq[..e.nbq].iter().fold(0u8, |a, q| a | 1 << q) }).collect();
+        let ge3 = ent.iter().map(|&i| v[i as usize].bq[0] >= 3).collect();
+        let solid = ent.iter().map(|&i| v[i as usize].solid as u32).collect();
+        UDirs { w: [col(0), col(1), col(2)], n: dirs.len(), ent, lstart, lp, lent, qm, ge3, solid }
     }).collect();
     let classes = |lists: &Vec<Vec<Link>>| -> Vec<Vec<RotClass>> { lists.iter().map(|v| {
         let mut keys: std::collections::HashMap<[i64; 10], usize> = Default::default();
@@ -234,6 +250,8 @@ struct Ctx<'a> {
     bins: Vec<i32>,
     /// the signed cos values behind `sbin`
     scos: Vec<f64>,
+    /// for each of them, the second-axis orders some recipe accepts, as a bitmask
+    sqm: Vec<u8>,
     /// Per-node cache: group (as a set) -> what the chain so far, without link or end piece
     /// still to come, does under it. Cleared in `test`, which every node runs first.
     share: bool,
@@ -582,6 +600,8 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
     let mut bins = std::mem::take(&mut ctx.bins);
     let ssym: &[bool; 65536] = &ctx.ssym;
     let scos = std::mem::take(&mut ctx.scos);
+    let sqm = std::mem::take(&mut ctx.sqm);
+    let (maxrad, inside, ordered, seed) = (ctx.maxrad, ctx.inside, ctx.ordered, ctx.a);
     let mut cand = std::mem::take(&mut ctx.cand);
     cand.clear();
     // one vector pass over the merged directions, straight in this node's frame
@@ -602,16 +622,27 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
                 // the exact angle test (the bins are coarse), then coplanarity on compact copies
                 let wd = [ud.w[0][d], ud.w[1][d], ud.w[2][d]];
                 let cs = dot(ul, wd);
-                if !scos.iter().any(|c| (c - cs).abs() < 1e-6) { continue; }
+                let qmask = match scos.iter().position(|c| (c - cs).abs() < 1e-6) { Some(i) => sqm[i], None => continue };
                 let nn = cross(ul, wd);
-                let (m0, m1) = (ud.start[d] as usize, ud.start[d + 1] as usize);
+                let nn2 = dot(nn, nn);
+                let (l0, l1) = (ud.lstart[d] as usize, ud.lstart[d + 1] as usize);
                 for (k, &li) in rc.links.iter().enumerate() {
-                    // the seed axis point in this link's exit frame, along nn
+                    // the seed axis point in this link's exit frame
                     let t = sub(o, rc.t[k]);
                     let ol = [t[0] * rc.r[0][0] + t[1] * rc.r[1][0] + t[2] * rc.r[2][0], t[0] * rc.r[0][1] + t[1] * rc.r[1][1] + t[2] * rc.r[2][1], t[0] * rc.r[0][2] + t[1] * rc.r[1][2] + t[2] * rc.r[2][2]];
                     let h = dot(ol, nn);
-                    for m in m0..m1 {
-                        if (dot(ud.p[m], nn) - h).abs() < 1e-5 { cand.push((li, ud.ent[m])); }
+                    for l in l0..l1 {
+                        // one test per axis line: coplanar with the seed axis, and the centre they
+                        // meet at within the limits `entry` will apply (looser here, exact there)
+                        if (dot(ud.lp[l], nn) - h).abs() >= 1e-5 { continue; }
+                        let sc = dot(cross(sub(ud.lp[l], ol), wd), nn) / nn2;
+                        if sc.abs() < 5e-7 || sc.abs() > maxrad + 1e-6 || (sc > inside.0 + 1e-6 && sc < inside.1 - 1e-6) { continue; }
+                        for m in ud.lent[l] as usize..ud.lent[l + 1] as usize {
+                            // the entry must have an axis order some recipe accepts at this angle,
+                            // and pass the seed-ordering rule
+                            if ud.qm[m] & qmask == 0 || (ordered && ud.ge3[m] && (ud.solid[m] as usize) < seed) { continue; }
+                            cand.push((li, ud.ent[m]));
+                        }
                     }
                 }
             }
@@ -626,6 +657,7 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
     ctx.bins = bins;
     ctx.cand = cand;
     ctx.scos = scos;
+    ctx.sqm = sqm;
 }
 
 fn dfs(ctx: &mut Ctx, w: &Xf, n: usize, depth: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
@@ -789,12 +821,13 @@ fn main() {
                 let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
                     pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, st: Default::default(),
-                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), cand: Vec::new() };
+                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), sqm: Vec::new(), cand: Vec::new() };
                 for x in &tab.pq {
                     if !ctx.pdiv.contains(&x.0) || x.3.len() < minorder { continue; }
                     let b = ((x.2 + 1.0) * 4096.0) as usize;
                     for k in b.saturating_sub(1)..=b + 1 { ctx.sbin[k] = true; }
-                    if !ctx.scos.iter().any(|c| (c - x.2).abs() < 1e-9) { ctx.scos.push(x.2); }
+                    let k = match ctx.scos.iter().position(|c| (c - x.2).abs() < 1e-9) { Some(k) => k, None => { ctx.scos.push(x.2); ctx.sqm.push(0); ctx.scos.len() - 1 } };
+                    ctx.sqm[k] |= 1 << x.1;
                 }
                 for b in 0..=8192usize { ctx.ssym[b] = ctx.sbin[b] || ctx.sbin[8192 - b] || (b < 8192 && ctx.sbin[8191 - b]) || ctx.sbin[8193 - b.min(8193)]; }
                 let a = if u[0].abs() < 0.6 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
