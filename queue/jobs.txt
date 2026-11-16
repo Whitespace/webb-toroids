@@ -9,3 +9,5 @@
 5 1 --links struts --max-radius 6.2 --max-pieces 152
 3 2 --links struts --max-faces 14 --max-radius 6.2 --max-pieces 152
 2 2 --max-faces 32 --max-radius 6.2 --max-pieces 152
+3 2 --min-group 60 --max-faces 14 --max-radius 6.2 --max-pieces 152
+2 2 --min-group 60 --max-radius 6.2 --max-pieces 152
