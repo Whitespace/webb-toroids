@@ -41,7 +41,13 @@ struct RotClass { r: M3, hn: usize, links: Vec<u32>, t: Vec<V3> }
 
 /// `pqk[i]` goes with `pq[i]`: a top-order axis of the generated group nearest the first generator's
 /// axis, in the frame (e2, e3, u) of the two generator axes, and how many such axes ring it.
-struct Tables { pqk: Vec<(V3, usize)>, ud: Vec<UDirs>, rc: [Vec<Vec<RotClass>>; 2], axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
+/// Every direction an end-piece axis can have in the frame of the node the last link leaves from
+/// (rotation class x axis direction), with opposite and repeated directions merged. `mem` lists
+/// the (class, direction) pairs behind each one.
+#[derive(Default)]
+struct Points { w: [Vec<f64>; 3], n: usize, start: Vec<u32>, mem: Vec<(u32, u32)> }
+
+struct Tables { pt: [Vec<Points>; 2], pqk: Vec<(V3, usize)>, ud: Vec<UDirs>, rc: [Vec<Vec<RotClass>>; 2], axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
 
 fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -> Tables {
     let mut ax: Vec<Vec<AxEntry>> = (0..11).map(|_| Vec::new()).collect();
@@ -136,6 +142,30 @@ fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -
         out
     }).collect() };
     let rc = [classes(&thru), classes(&links)];
+    let points = |cls: &Vec<Vec<RotClass>>| -> Vec<Points> { cls.iter().map(|v| {
+        let mut keys: std::collections::HashMap<[i64; 3], u32> = Default::default();
+        let mut dirs: Vec<V3> = Vec::new();
+        let mut pairs: Vec<(u32, u32, u32)> = Vec::new();
+        for (ci, c) in v.iter().enumerate() {
+            let u = &ud[c.hn];
+            for d in 0..u.n {
+                let x = mv(&c.r, [u.w[0][d], u.w[1][d], u.w[2][d]]);
+                let mut k = [(x[0] * 1e7).round() as i64, (x[1] * 1e7).round() as i64, (x[2] * 1e7).round() as i64];
+                let neg = [-k[0], -k[1], -k[2]];
+                if neg > k { k = neg; }
+                let pi = *keys.entry(k).or_insert_with(|| { dirs.push(x); dirs.len() as u32 - 1 });
+                pairs.push((pi, ci as u32, d as u32));
+            }
+        }
+        pairs.sort_unstable();
+        let mut start = vec![0u32; dirs.len() + 1];
+        for p in &pairs { start[p.0 as usize + 1] += 1; }
+        for i in 0..dirs.len() { start[i + 1] += start[i]; }
+        let m = (dirs.len() + simd::W - 1) / simd::W * simd::W;
+        let col = |i: usize| -> Vec<f64> { (0..m).map(|k| if k < dirs.len() { dirs[k][i] } else { 0.0 }).collect() };
+        Points { w: [col(0), col(1), col(2)], n: dirs.len(), start, mem: pairs.iter().map(|p| (p.1, p.2)).collect() }
+    }).collect() };
+    let pt = [points(&rc[0]), points(&rc[1])];
     let tau = 2.0 * std::f64::consts::PI;
     let pqk: Vec<(V3, usize)> = pq.iter().map(|(p, q, c, rec)| {
         let gens = [Xf::about(o0, [0.0, 0.0, 1.0], tau / *p as f64), Xf::about(o0, [(1.0 - c * c).sqrt(), 0.0, *c], tau / *q as f64)];
@@ -156,7 +186,7 @@ fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -
         if spread > 1e-6 && (tau / m as f64 - spread) > 1e-6 { return ([0.0; 3], 0); }
         (sel[0], m)
     }).collect();
-    Tables { pqk, ud, rc, axw, sc, ax, links, thru, cosset, pq, cosbin }
+    Tables { pt, pqk, ud, rc, axw, sc, ax, links, thru, cosset, pq, cosbin }
 }
 
 struct Shared {
@@ -199,6 +229,8 @@ struct Ctx<'a> {
     /// bitmap over the signed cos of the angle between the seed axis and an end axis: the values
     /// some group recipe accepts for this seed's axis orders, one bin of slack either side
     sbin: Box<[bool; 65536]>,
+    /// `sbin` made symmetric under cos -> -cos, for directions stored up to sign
+    ssym: Box<[bool; 65536]>,
     bins: Vec<i32>,
     /// the signed cos values behind `sbin`
     scos: Vec<f64>,
@@ -209,6 +241,8 @@ struct Ctx<'a> {
     gc: std::collections::HashMap<[i64; 3], u32, std::hash::BuildHasherDefault<validate::Fx>>,
     gce: Vec<GEnt>,
     gcg: Vec<Xf>,
+    gcent: Vec<validate::Ent>,
+    gcstab: Vec<(u32, u32)>,
     gc_np: usize,
     ex: V3,
     ey: V3,
@@ -237,7 +271,7 @@ impl Stats {
 
 /// verdict 1: the prefix orbit overlaps itself or is too big; 2: it fails the outermost-vertex
 /// screen at `vs`; 0: neither.
-struct GEnt { verdict: u8, vs: V3, far: f64, g0: usize, gl: usize }
+struct GEnt { verdict: u8, vs: V3, far: f64, g0: usize, gl: usize, e0: usize, el: usize, s0: usize, sl: usize }
 
 fn divisors(n: usize) -> Vec<usize> { [2usize, 3, 4, 5].iter().cloned().filter(|d| n % d == 0).collect() }
 
@@ -301,7 +335,7 @@ fn record(ctx: &mut Ctx, reps: &[(usize, Xf)], gens: &[Xf], centre: V3, res: Res
 
 #[cfg_attr(feature = "prof", inline(never))]
 fn test(ctx: &mut Ctx, w: &Xf, n: usize, pieces: &mut Vec<(usize, Xf)>) {
-    if !ctx.gce.is_empty() { ctx.gc.clear(); ctx.gce.clear(); ctx.gcg.clear(); }
+    if !ctx.gce.is_empty() { ctx.gc.clear(); ctx.gce.clear(); ctx.gcg.clear(); ctx.gcent.clear(); ctx.gcstab.clear(); }
     ctx.gc_np = pieces.len();
     let wi = w.inv();
     let o = wi.t;
@@ -385,6 +419,7 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                 let (rv, m) = tab.pqk[ri];
                 // how many leading pieces the cache has shown not to overlap their own images
                 let mut clean = 0;
+                let mut cached = usize::MAX;
                 if ctx.share && m > 0 {
                     let e2 = unit(sub(wb, scale(ctx.u, cs)));
                     let e3 = cross(ctx.u, e2);
@@ -401,8 +436,15 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                             ctx.scratch.probe = false;
                             let verdict = match res { Err("overlap-centre") | Err("overlap-sphere") | Err("too-big") => 1, Err("q-prescreen") => 2, _ => 0 };
                             let g0 = ctx.gcg.len();
-                            if verdict == 2 || ctx.check { ctx.gcg.extend_from_slice(&ctx.scratch.grp); }
-                            ctx.gce.push(GEnt { verdict, vs: ctx.scratch.vs, far: ctx.scratch.far, g0, gl: ctx.gcg.len() - g0 });
+                            let (e0, s0) = (ctx.gcent.len(), ctx.gcstab.len());
+                            if verdict != 1 || ctx.check { ctx.gcg.extend_from_slice(&ctx.scratch.grp); }
+                            if verdict != 1 {
+                                // keep the prefix orbit too, so hits with this group need not rebuild it
+                                let (en, st) = ctx.scratch.snapshot();
+                                ctx.gcent.extend_from_slice(en);
+                                ctx.gcstab.extend_from_slice(st);
+                            }
+                            ctx.gce.push(GEnt { verdict, vs: ctx.scratch.vs, far: ctx.scratch.far, g0, gl: ctx.gcg.len() - g0, e0, el: ctx.gcent.len() - e0, s0, sl: ctx.gcstab.len() - s0 });
                             ctx.gc.insert(key, ctx.gce.len() as u32 - 1);
                             ctx.gce.len() - 1
                         }
@@ -416,14 +458,27 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                     }
                     if ge.verdict == 1 { ctx.pre_ov += 1; continue; }
                     clean = ctx.gc_np;
+                    cached = gi;
                     if ge.verdict == 2 && ctx.near == 0 && pieces[ctx.gc_np..].iter().all(|(s, x)| validate::extra_clear(ctx.lib, *s, x, centre, grp, ge.vs, ge.far)) { ctx.pre_q += 1; continue; }
                 }
                 if quick(ctx.lib, &gens, pieces, clean) { ctx.st.quick += 1; continue; }
                 let t0 = std::time::Instant::now();
-                from_recipe(&gens, rec, &mut ctx.scratch.grp);
-                ctx.scratch.clean = clean;
-                let res = validate::validate(ctx.lib, pieces, centre, ctx.near == 0, &mut ctx.scratch);
-                ctx.scratch.clean = 0;
+                let mut res = Err("retry");
+                if cached != usize::MAX && ctx.near == 0 {
+                    // screens only, on the cached group and prefix orbit
+                    let ge = &ctx.gce[cached];
+                    ctx.scratch.grp.clear();
+                    ctx.scratch.grp.extend_from_slice(&ctx.gcg[ge.g0..ge.g0 + ge.gl]);
+                    ctx.scratch.load_prefix(ctx.gc_np, &ctx.gcent[ge.e0..ge.e0 + ge.el], &ctx.gcstab[ge.s0..ge.s0 + ge.sl]);
+                    res = validate::validate(ctx.lib, pieces, centre, true, &mut ctx.scratch);
+                    ctx.scratch.pre_np = 0;
+                }
+                if let Err("retry") = res {
+                    from_recipe(&gens, rec, &mut ctx.scratch.grp);
+                    ctx.scratch.clean = clean;
+                    res = validate::validate(ctx.lib, pieces, centre, ctx.near == 0, &mut ctx.scratch);
+                    ctx.scratch.clean = 0;
+                }
                 let ns = t0.elapsed().as_nanos() as u64;
                 ctx.st.val_ns += ns;
                 if let Err(r) = &res { let k = RNAMES.iter().position(|x| x == r).unwrap_or(11); ctx.st.r[k] += 1; ctx.st.rns[k] += ns; }
@@ -519,45 +574,47 @@ fn join_apply(ctx: &mut Ctx, w: &Xf, list: &[Link], cand: &[(u32, u32)], pieces:
 #[cfg_attr(feature = "prof", inline(never))]
 fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
     let tab = ctx.tab;
-    let (list, classes) = if any_left == 0 { (&tab.thru[n], &tab.rc[0][n]) } else { (&tab.links[n], &tab.rc[1][n]) };
+    let kind = if any_left == 0 { 0 } else { 1 };
+    let (list, classes, pt) = (if kind == 0 { &tab.thru[n] } else { &tab.links[n] }, &tab.rc[kind][n], &tab.pt[kind][n]);
     let wi = w.inv();
     let o = wi.t;
     let u = mv(&wi.r, ctx.u);
     let mut bins = std::mem::take(&mut ctx.bins);
-    let sbin: &[bool; 65536] = &ctx.sbin;
+    let ssym: &[bool; 65536] = &ctx.ssym;
     let scos = std::mem::take(&mut ctx.scos);
     let mut cand = std::mem::take(&mut ctx.cand);
     cand.clear();
-    let mut work = 0u64;
-    for rc in classes {
-        // the seed axis direction in the exit frame: transpose(r) * u
-        let ul = [u[0] * rc.r[0][0] + u[1] * rc.r[1][0] + u[2] * rc.r[2][0], u[0] * rc.r[0][1] + u[1] * rc.r[1][1] + u[2] * rc.r[2][1], u[0] * rc.r[0][2] + u[1] * rc.r[1][2] + u[2] * rc.r[2][2]];
-        let ud = &tab.ud[rc.hn];
-        let [wx, wy, wz] = &ud.w;
-        bins.resize(wx.len(), 0);
-        simd::bins(ul, wx, wy, wz, &mut bins);
-        work += ud.n as u64;
-        for (ci, ch) in bins.chunks_exact(simd::W).enumerate() {
-          // one branch per chunk: almost every chunk has no direction at an allowed angle
-          if !ch.iter().fold(false, |a, &b| a | sbin[b as usize & 0xffff]) { continue; }
-          for d in ci * simd::W..((ci + 1) * simd::W).min(ud.n) {
-            if !sbin[bins[d] as usize & 0xffff] { continue; }
-            // the exact angle test (the bins are coarse), then coplanarity on compact copies
-            let wd = [wx[d], wy[d], wz[d]];
-            let cs = dot(ul, wd);
-            if !scos.iter().any(|c| (c - cs).abs() < 1e-6) { continue; }
-            let nn = cross(ul, wd);
-            let (m0, m1) = (ud.start[d] as usize, ud.start[d + 1] as usize);
-            for (k, &li) in rc.links.iter().enumerate() {
-                // the seed axis point in this link's exit frame, along nn
-                let t = sub(o, rc.t[k]);
-                let ol = [t[0] * rc.r[0][0] + t[1] * rc.r[1][0] + t[2] * rc.r[2][0], t[0] * rc.r[0][1] + t[1] * rc.r[1][1] + t[2] * rc.r[2][1], t[0] * rc.r[0][2] + t[1] * rc.r[1][2] + t[2] * rc.r[2][2]];
-                let h = dot(ol, nn);
-                for m in m0..m1 {
-                    if (dot(ud.p[m], nn) - h).abs() < 1e-5 { cand.push((li, ud.ent[m])); }
+    // one vector pass over the merged directions, straight in this node's frame
+    let [px, py, pz] = &pt.w;
+    bins.resize(px.len(), 0);
+    simd::bins(u, px, py, pz, &mut bins);
+    let work = pt.n as u64;
+    for (ci, ch) in bins.chunks_exact(simd::W).enumerate() {
+        // one branch per chunk: almost every chunk has no direction at an allowed angle
+        if !ch.iter().fold(false, |a, &b| a | ssym[b as usize & 0xffff]) { continue; }
+        for pi in ci * simd::W..((ci + 1) * simd::W).min(pt.n) {
+            if !ssym[bins[pi] as usize & 0xffff] { continue; }
+            for &(c, d) in &pt.mem[pt.start[pi] as usize..pt.start[pi + 1] as usize] {
+                let (rc, d) = (&classes[c as usize], d as usize);
+                // the seed axis direction in the exit frame: transpose(r) * u
+                let ul = [u[0] * rc.r[0][0] + u[1] * rc.r[1][0] + u[2] * rc.r[2][0], u[0] * rc.r[0][1] + u[1] * rc.r[1][1] + u[2] * rc.r[2][1], u[0] * rc.r[0][2] + u[1] * rc.r[1][2] + u[2] * rc.r[2][2]];
+                let ud = &tab.ud[rc.hn];
+                // the exact angle test (the bins are coarse), then coplanarity on compact copies
+                let wd = [ud.w[0][d], ud.w[1][d], ud.w[2][d]];
+                let cs = dot(ul, wd);
+                if !scos.iter().any(|c| (c - cs).abs() < 1e-6) { continue; }
+                let nn = cross(ul, wd);
+                let (m0, m1) = (ud.start[d] as usize, ud.start[d + 1] as usize);
+                for (k, &li) in rc.links.iter().enumerate() {
+                    // the seed axis point in this link's exit frame, along nn
+                    let t = sub(o, rc.t[k]);
+                    let ol = [t[0] * rc.r[0][0] + t[1] * rc.r[1][0] + t[2] * rc.r[2][0], t[0] * rc.r[0][1] + t[1] * rc.r[1][1] + t[2] * rc.r[2][1], t[0] * rc.r[0][2] + t[1] * rc.r[1][2] + t[2] * rc.r[2][2]];
+                    let h = dot(ol, nn);
+                    for m in m0..m1 {
+                        if (dot(ud.p[m], nn) - h).abs() < 1e-5 { cand.push((li, ud.ent[m])); }
+                    }
                 }
             }
-          }
         }
     }
     ctx.tests += work;
@@ -697,8 +754,9 @@ fn main() {
     let shared = Mutex::new(Shared { seen, tsv, jsonl, ckpt, n: nres, reasons: Default::default() });
     say(format!("{}{}", if resuming { "resuming: " } else { "" }, config));
     say(format!("through links {:?}", tab.thru.iter().map(|v| v.len()).collect::<Vec<_>>()));
-    if use_join { say(format!("join: directions {:?} rotation classes {:?} (through {:?})", tab.ud.iter().map(|v| v.n).collect::<Vec<_>>(),
-        tab.rc[1].iter().map(|v| v.len()).collect::<Vec<_>>(), tab.rc[0].iter().map(|v| v.len()).collect::<Vec<_>>())); }
+    if use_join { say(format!("join: directions {:?} rotation classes {:?} (through {:?}) merged directions {:?} (through {:?})", tab.ud.iter().map(|v| v.n).collect::<Vec<_>>(),
+        tab.rc[1].iter().map(|v| v.len()).collect::<Vec<_>>(), tab.rc[0].iter().map(|v| v.len()).collect::<Vec<_>>(),
+        tab.pt[1].iter().map(|v| v.n).collect::<Vec<_>>(), tab.pt[0].iter().map(|v| v.n).collect::<Vec<_>>())); }
     say(format!("solids {} seeds {} ({} already done) threads {} axtab {:?} links {:?}", lib.len(), seeds.len(), seeds.len() - todo.len(), threads,
         tab.ax.iter().map(|v| v.len()).collect::<Vec<_>>(), tab.links.iter().map(|v| v.len()).collect::<Vec<_>>()));
     let next = AtomicUsize::new(0);
@@ -731,13 +789,14 @@ fn main() {
                 let mut ctx = Ctx { lib: &lib, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
                     pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, st: Default::default(),
-                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), cand: Vec::new() };
+                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), cand: Vec::new() };
                 for x in &tab.pq {
                     if !ctx.pdiv.contains(&x.0) || x.3.len() < minorder { continue; }
                     let b = ((x.2 + 1.0) * 4096.0) as usize;
                     for k in b.saturating_sub(1)..=b + 1 { ctx.sbin[k] = true; }
                     if !ctx.scos.iter().any(|c| (c - x.2).abs() < 1e-9) { ctx.scos.push(x.2); }
                 }
+                for b in 0..=8192usize { ctx.ssym[b] = ctx.sbin[b] || ctx.sbin[8192 - b] || (b < 8192 && ctx.sbin[8191 - b]) || ctx.sbin[8193 - b.min(8193)]; }
                 let a = if u[0].abs() < 0.6 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
                 ctx.ex = unit(cross(u, a));
                 ctx.ey = cross(u, ctx.ex);

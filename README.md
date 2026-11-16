@@ -155,6 +155,8 @@ pieces' axis directions are stored once each. For each group one vector pass bin
 between the seed axis and every stored direction, and only pairs at an allowed angle whose axes
 are also coplanar are looked at further. The pairs that survive are exactly the ones the plain
 loop would have reached, in the same order (`--no-join` runs the plain loop for comparison).
+Directions that coincide across groups, or are opposite, are merged into one table per polygon,
+so the vector pass runs once per chain node over about 2.5 times fewer entries.
 
 Many hits at one chain node generate the same group, and most of them fail on what the chain
 so far does under that group, whatever is attached afterwards. So per node and group the
@@ -165,6 +167,13 @@ orbit fails the same screen at the same vertex). Everything else takes the norma
 results are the same (`--no-share` to compare; `SHARE_CHECK=1` asserts that hits sharing a cache
 entry really have the same group). In the `done` line these show as `prefix-overlap` and
 `prefix-q`.
+
+The same cache keeps the prefix's orbit. A hit that is not dropped outright runs the screens on
+that orbit plus its own remaining pieces, which is most of the per-hit cost saved; one that passes
+them is validated again from scratch, so nothing recorded depends on the cache. One visible side
+effect: when a link's centre lies on a rotation axis, the cached and the fresh orbit keep
+differently turned copies of it, and a few rejections per 10,000 move between `q-prescreen` and
+`q-proxy`. Both are rejections either way.
 
 ## Included runs
 

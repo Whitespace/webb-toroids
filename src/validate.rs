@@ -171,7 +171,7 @@ pub fn support_planes(pts: &[V3], u: V3, v: V3, centre: V3) -> Vec<(V3, f64)> {
 /// stored; vertices are never transformed. Tests bring their directions into the solid's own
 /// frame instead and run on its structure-of-arrays vertex table (see simd.rs).
 #[derive(Clone, Copy)]
-struct Ent { rep: u32, g: u32, s: u32, c: V3, rad: f64 }
+pub struct Ent { rep: u32, g: u32, s: u32, c: V3, rad: f64 }
 
 /// Per-thread buffers reused between candidates.
 #[derive(Default)]
@@ -194,10 +194,27 @@ pub struct Scratch {
     /// group (inscribed spheres), so those pairs are not tested again
     pub clean: usize,
     axk: Vec<u32>,
+    /// > 0: `ent` and `stab` already hold the orbit of the first `pre_np` representatives under
+    /// `grp` (see `load_prefix`); only the remaining ones are added, and a candidate that passes
+    /// the screens comes back as Err("retry") to be validated from scratch.
+    pub pre_np: usize,
     pub probe: bool,
     /// the outermost vertex the last call used, and its squared distance from the centre
     pub vs: V3,
     pub far: f64,
+}
+
+impl Scratch {
+    /// The orbit (as centres) and the on-axis list left by the last call.
+    pub fn snapshot(&self) -> (&[Ent], &[(u32, u32)]) { (&self.ent, &self.stab) }
+    /// Hand back a prefix orbit saved with `snapshot`; `grp` must hold the same group, same order.
+    pub fn load_prefix(&mut self, np: usize, ent: &[Ent], stab: &[(u32, u32)]) {
+        self.ent.clear();
+        self.ent.extend_from_slice(ent);
+        self.stab.clear();
+        self.stab.extend_from_slice(stab);
+        self.pre_np = np;
+    }
 }
 
 /// For a chain prefix that fails the outermost-vertex screen at `vs` under the group `grp`: true
@@ -359,7 +376,61 @@ pub struct Res {
 /// spheres of a representative and an image overlapping, too many pieces. Returns the bitmask of
 /// representatives that sit on a rotation axis.
 #[cfg_attr(feature = "prof", inline(never))]
-fn orbit(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, grp: &[Xf], ent: &mut Vec<Ent>, stab: &mut Vec<(u32, u32)>, axk: &mut Vec<u32>, clean: usize, max_pieces: usize) -> Result<u64, &'static str> {
+fn orbit(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, grp: &[Xf], ent: &mut Vec<Ent>, stab: &mut Vec<(u32, u32)>, axk: &mut Vec<u32>, clean: usize, max_pieces: usize, pre_np: usize) -> Result<u64, &'static str> {
+    if pre_np > 0 {
+        // The prefix orbit is already in `ent`, deduplicated and known free of overlaps within
+        // itself. Add the other representatives and test every pair that involves one of them.
+        let nrep = reps.len();
+        for &(s, x) in &reps[pre_np..] {
+            let o = mv(&mt(&x.r), sub(centre, x.t));
+            let sl = &lib[s];
+            if norm(o) > 1e-6 && (0..sl.faces.len()).all(|f| dot(sl.fnorm[f], sub(o, sl.v[sl.faces[f][0]])) < -1e-6) { return Err("overlap-centre"); }
+        }
+        let npre = ent.len();
+        let mut onaxis = 0u64;
+        for &(i, _) in stab.iter() { onaxis |= 1 << i; }
+        for e in ent.iter() {
+            // an untouched representative is not an image, unless it sits on an axis
+            if e.g == 0 && (onaxis >> e.rep) & 1 == 0 { continue; }
+            for &(s2, x2) in &reps[pre_np..] {
+                let d = sub(x2.t, e.c);
+                let d2 = dot(d, d);
+                let r = lib[s2].inr + lib[e.s as usize].inr - 1e-4;
+                if d2 > 1e-10 && d2 < r * r { return Err("overlap-sphere"); }
+            }
+        }
+        for (i, &(s, x)) in reps.iter().enumerate().skip(pre_np) { ent.push(Ent { rep: i as u32, g: 0, s: s as u32, c: x.t, rad: lib[s].radius }); }
+        let base = ent.len();
+        let mut newax = 0u64;
+        for (gi, g) in grp.iter().enumerate().skip(1) {
+            for (i, &(s, x)) in reps.iter().enumerate().skip(pre_np) {
+                let c = g.ap(x.t);
+                for &(s2, x2) in reps {
+                    let d = sub(x2.t, c);
+                    let d2 = dot(d, d);
+                    let r = lib[s2].inr + lib[s].inr - 1e-4;
+                    if d2 > 1e-10 && d2 < r * r { return Err("overlap-sphere"); }
+                }
+                let d = sub(x.t, c);
+                if dot(d, d) < 1e-8 { newax |= 1 << i; stab.push((i as u32, gi as u32)); }
+                ent.push(Ent { rep: i as u32, g: gi as u32, s: s as u32, c, rad: lib[s].radius });
+            }
+        }
+        if newax != 0 {
+            axk.clear();
+            for i in pre_np..nrep { if (newax >> i) & 1 == 1 { axk.push((npre + i - pre_np) as u32); } }
+            let mut k = base;
+            for i in base..ent.len() {
+                let e = ent[i];
+                let ax = (newax >> e.rep) & 1 == 1;
+                let dup = ax && axk.iter().any(|&j| { let f = &ent[j as usize]; f.rep == e.rep && { let d = sub(f.c, e.c); dot(d, d) < 1e-8 } });
+                if !dup { if ax { axk.push(k as u32); } ent[k] = e; k += 1; }
+            }
+            ent.truncate(k);
+        }
+        if ent.len() > max_pieces { return Err("too-big"); }
+        return Ok(onaxis | newax);
+    }
     // the centre strictly inside an off-centre piece means that piece meets its own images
     for &(s, x) in reps {
         let o = mv(&mt(&x.r), sub(centre, x.t));
@@ -471,11 +542,12 @@ fn outer_screen(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, grp: &[Xf], ent
 /// and measure it. Err(reason) on rejection.
 #[cfg_attr(feature = "prof", inline(never))]
 pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool, sc: &mut Scratch) -> Result<Res, &'static str> {
-    let Scratch { grp, ent, on, hull, dirs, facets, done, planes, stab, skip, elist, max_pieces, probe, vs: pvs, far: pfar, clean, axk } = sc;
+    let Scratch { grp, ent, on, hull, dirs, facets, done, planes, stab, skip, elist, max_pieces, probe, vs: pvs, far: pfar, clean, axk, pre_np } = sc;
+    let pre_np = *pre_np;
     let clean = *clean;
     let grp: &[Xf] = grp;
     let nrep = reps.len();
-    let onaxis = orbit(lib, reps, centre, grp, ent, stab, axk, clean, *max_pieces)?;
+    let onaxis = orbit(lib, reps, centre, grp, ent, stab, axk, clean, *max_pieces, pre_np)?;
     // The (Q) screens run before the collision test: they are cheaper and reject almost everything.
     // (Q) pre-screen at the outermost vertex, which is certainly a hull vertex: its unit-distance
     // neighbours must span a cone containing every other vertex, or some hull edge there is not unit.
@@ -564,6 +636,9 @@ pub fn validate(lib: &[Solid], reps: &[(usize, Xf)], centre: V3, prescreen: bool
             }
         }
     }
+    // screens passed on a borrowed prefix orbit: the caller validates this one from scratch, so
+    // that what is recorded never depends on the cache
+    if pre_np > 0 { return Err("retry"); }
     // Survivors are rare from here on, so the rest works on fully placed pieces.
     let rp: Vec<Placed> = reps.iter().map(|&(s, x)| place(lib, s, x)).collect();
     let mut cs: Vec<(usize, Xf)> = reps.to_vec();
