@@ -1,0 +1,87 @@
+config depth=2 any=2 min-group=24 near=0 only=all seeds=all range=None nseeds=775 max-radius=6.2 max-faces=32 max-pieces=152
+through links [0, 0, 0, 106, 128, 94, 41, 0, 26, 0, 24]
+join: directions [0, 0, 0, 632, 286, 147, 103, 0, 52, 0, 80] rotation classes [0, 0, 0, 5213, 2396, 837, 325, 0, 289, 0, 423] (through [0, 0, 0, 13, 9, 17, 15, 0, 15, 0, 15])
+solids 127 seeds 775 (0 already done) threads 2 axtab [0, 0, 0, 1279, 823, 338, 185, 0, 106, 0, 104] links [0, 0, 0, 9916, 5480, 3034, 575, 0, 530, 0, 614]
+seeds done 10/775 233s
+seeds done 20/775 487s
+seeds done 30/775 823s
+seeds done 40/775 1127s
+seeds done 50/775 1472s
+resuming: config depth=2 any=2 min-group=24 near=0 only=all seeds=all range=None nseeds=775 max-radius=6.2 max-faces=32 max-pieces=152
+through links [0, 0, 0, 106, 128, 94, 41, 0, 26, 0, 24]
+join: directions [0, 0, 0, 632, 286, 147, 103, 0, 52, 0, 80] rotation classes [0, 0, 0, 5213, 2396, 837, 325, 0, 289, 0, 423] (through [0, 0, 0, 13, 9, 17, 15, 0, 15, 0, 15])
+solids 127 seeds 775 (58 already done) threads 2 axtab [0, 0, 0, 1279, 823, 338, 185, 0, 106, 0, 104] links [0, 0, 0, 9916, 5480, 3034, 575, 0, 530, 0, 614]
+seeds done 60/775 22s
+seeds done 70/775 145s
+seeds done 80/775 276s
+seeds done 90/775 425s
+seeds done 100/775 632s
+seeds done 110/775 850s
+seeds done 120/775 1075s
+seeds done 130/775 1331s
+seeds done 140/775 1562s
+seeds done 150/775 1837s
+seeds done 160/775 2139s
+seeds done 170/775 2398s
+seeds done 180/775 2659s
+seeds done 190/775 2991s
+seeds done 200/775 3288s
+seeds done 210/775 3632s
+seeds done 220/775 3962s
+seeds done 230/775 4352s
+seeds done 240/775 4749s
+seeds done 250/775 5070s
+seeds done 260/775 5311s
+seeds done 270/775 5562s
+seeds done 280/775 5828s
+seeds done 290/775 6070s
+seeds done 300/775 6325s
+seeds done 310/775 6587s
+seeds done 320/775 6888s
+seeds done 330/775 7193s
+seeds done 340/775 7553s
+seeds done 350/775 7822s
+seeds done 360/775 8129s
+seeds done 370/775 8452s
+seeds done 380/775 8681s
+seeds done 390/775 8973s
+seeds done 400/775 9289s
+seeds done 410/775 9531s
+seeds done 420/775 9771s
+seeds done 430/775 9995s
+seeds done 440/775 10272s
+seeds done 450/775 10564s
+seeds done 460/775 10858s
+seeds done 470/775 11105s
+seeds done 480/775 11384s
+seeds done 490/775 11543s
+seeds done 500/775 11724s
+seeds done 510/775 11877s
+seeds done 520/775 12036s
+seeds done 530/775 12156s
+seeds done 540/775 12293s
+seeds done 550/775 12409s
+seeds done 560/775 12692s
+seeds done 570/775 12952s
+seeds done 580/775 13215s
+seeds done 590/775 13466s
+seeds done 600/775 13733s
+seeds done 610/775 13964s
+seeds done 620/775 14244s
+seeds done 630/775 14471s
+seeds done 640/775 14531s
+seeds done 650/775 14571s
+seeds done 660/775 14623s
+seeds done 670/775 14660s
+seeds done 680/775 14724s
+seeds done 690/775 14787s
+seeds done 700/775 14830s
+seeds done 710/775 14894s
+seeds done 720/775 14957s
+seeds done 730/775 15065s
+seeds done 740/775 15146s
+seeds done 750/775 15281s
+seeds done 760/775 15440s
+seeds done 770/775 15655s
+seeds done 775/775 15749s
+done 15749.4s tests 6594771113243 hits 1544388460 unique 157 reasons {"valid": 646, "pinch": 163, "overlap-quick": 146569529, "prefix-overlap": 1031750111, "overlap-chain": 8272, "too-big": 2567794, "RAQT": 518, "nonmanifold": 176, "overlap-centre": 691155, "pruned-subtrees": 229472345, "overlap-sphere": 50579983, "genus0": 477, "q-prescreen": 74072328, "prefix-q": 230468422, "disconnected": 125, "contact": 68, "q-proxy": 7667180, "overlap": 12031} (counts cover this session only; unique is the total)
