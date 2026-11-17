@@ -66,6 +66,8 @@ Directly:
 | `--resume` | continue from `checkpoint.txt` in the output directory if there is one; refuses if the settings differ | off |
 | `--no-join` | visit the last chain level link by link, as before the join (slower; same results, for checking) | off |
 | `--no-share` | test every hit on its own instead of sharing the chain-prefix screens between hits with the same group (slower; same results, for checking) | off |
+| `--partials` | also write every collision-free hit, toroid or not, to `partials.tsv` (turns the hull screens off, so slower; large file) | off |
+| `--combine DIR` | no search: union pairs of chains from `DIR/partials.tsv` that share seed, group and centre, validate each, write `DIR/combined/` (`--max-pairs N` skips placements with more pairs, default 2,000,000) | |
 | `--out DIR` | output directory | `out` |
 
 Output: `results.tsv` (one row per distinct toroid), `results.jsonl` (representative pieces and
@@ -157,6 +159,17 @@ are also coplanar are looked at further. The pairs that survive are exactly the 
 loop would have reached, in the same order (`--no-join` runs the plain loop for comparison).
 Directions that coincide across groups, or are opposite, are merged into one table per polygon,
 so the vector pass runs once per chain node over about 2.5 times fewer entries.
+
+Tables of 8192 directions or more are stored cell by cell of a cube-map grid, about 32 to a cell.
+The vector pass then runs over the cell centres against the allowed angle bins widened by the
+cell size, and only cells that can hold a match are opened, on a compact single-precision copy.
+Seeds that are all scan (many have no hit at all on all-solid runs) take a third to a quarter of
+the time. `NO_GRID=1` gives the full pass for comparison; results and reject counts are the same.
+
+A seed's nearest copy sits on the neighbouring axis of the same order, so below a closed-form
+distance from the centre their inscribed spheres overlap whatever the chain does. Those centres
+are rejected before the group is built (`seed-overlap`), and a seed for which that distance
+exceeds `--max-radius` is skipped (`seed-dead`).
 
 Many hits at one chain node generate the same group, and most of them fail on what the chain
 so far does under that group, whatever is attached afterwards. So per node and group the
