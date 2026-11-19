@@ -1,4 +1,5 @@
 mod combine;
+mod decorate;
 mod geom;
 mod simd;
 mod solids;
@@ -835,6 +836,9 @@ fn main() {
     let (mut maxrad, mut maxpieces) = (f64::MAX, usize::MAX);
     let mut maxfaces = usize::MAX;
     let (mut minorder, mut near) = (24usize, 0usize);
+    let mut frames = false;
+    let (mut decorate_file, mut decorate_id): (Option<String>, usize) = (None, 0);
+    let mut beam_dec = 0usize;
     let mut range: Option<(usize, usize)> = None;
     let mut outdir = "out".to_string();
     let mut only: Option<Vec<String>> = None;
@@ -858,6 +862,9 @@ fn main() {
             "--threads" => { threads = args[i + 1].parse().unwrap(); i += 1; }
             "--min-group" => { minorder = args[i + 1].parse().unwrap(); i += 1; }
             "--near" => { near = args[i + 1].parse().unwrap(); i += 1; }
+            // record every (R)(A) toroid that passes the hull screens (all hull edges unit) even if
+            // some hull edges are not edges of the toroid; the screens stay on
+            "--frames" => { frames = true; near = usize::MAX; }
             "--seed-range" => { let v: Vec<usize> = args[i + 1].split(':').map(|x| x.parse().unwrap()).collect(); range = Some((v[0], v[1])); i += 1; }
             "--resume" => { resume = true; }
             "--no-join" => { use_join = false; }
@@ -869,6 +876,9 @@ fn main() {
             "--beam" => { beam = args[i + 1].parse().unwrap(); i += 1; }
             "--new-hulls" => { new_hulls = Some(args[i + 1].clone()); i += 1; }
             "--combine" => { combine_dir = Some(args[i + 1].clone()); i += 1; }
+            "--decorate" => { decorate_file = Some(args[i + 1].clone()); i += 1; }
+            "--id" => { decorate_id = args[i + 1].parse().unwrap(); i += 1; }
+            "--dec-beam" => { beam_dec = args[i + 1].parse().unwrap(); i += 1; }
             "--max-pairs" => { maxpairs = args[i + 1].parse().unwrap(); i += 1; }
             "--max-radius" => { maxrad = args[i + 1].parse().unwrap(); i += 1; }
             "--max-faces" => { maxfaces = args[i + 1].parse().unwrap(); i += 1; }
@@ -885,6 +895,8 @@ fn main() {
     if let Some(dir) = &combine_dir { let hulls: Option<HashSet<String>> = new_hulls.as_ref().map(|f| std::fs::read_to_string(f).unwrap().lines().map(|l| l.to_string()).collect());
         combine::combine(&lib, dir, maxpieces, threads, maxpairs, base_raqt, rounds, beam, hulls); return; }
     let active: Vec<bool> = lib.iter().map(|s| only.as_ref().map_or(true, |o| o.contains(&s.name)) && s.faces.len() <= maxfaces).collect();
+    if let Some(f) = &decorate_file { let hulls: Option<HashSet<String>> = new_hulls.as_ref().map(|f| std::fs::read_to_string(f).unwrap().lines().map(|l| l.to_string()).collect());
+        decorate::decorate(&lib, &active, f, decorate_id, depth, maxpieces, threads, hulls, &outdir, maxrad, beam_dec); return; }
     // --links: which solids may be links. "struts" makes the free links prisms and antiprisms
     // (cube and octahedron included) passed base to base, i.e. the straight struts of a
     // node-and-strut frame. With --any K, up to K other pieces may sit in the chain as bends.
@@ -987,7 +999,7 @@ fn main() {
                     let (a, b) = (dot(s.fnorm[f], u), dot(s.fnorm[f], s.v[s.faces[f][0]]) - 1e-6);
                     if a > 0.0 { inside.1 = inside.1.min(b / a); } else if a < 0.0 { inside.0 = inside.0.max(b / a); }
                 }
-                let mut ctx = Ctx { lib: &lib, ai, screen: near == 0 && !partials, partials, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
+                let mut ctx = Ctx { lib: &lib, ai, screen: (near == 0 || frames) && !partials, partials, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
                     pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, st: Default::default(),
                     axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), sdil: Vec::new(), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), sqm: Vec::new(), srex: Vec::new(), seed_ov: 0, cand: Vec::new() };
