@@ -100,6 +100,8 @@ Instead of running jobs by hand, a worker can chip away at a backlog on a couple
     mise run queue:status            # the queue, what is running, recent log
     mise run queue:add -- 4 1 --links struts --max-radius 6.2 --max-pieces 152
     mise run queue:uninstall         # stop it; the running job resumes next time
+    mise run queue:reinstall         # uninstall then install: restart on the latest build
+    mise run queue:push              # commit and push runs/ as it is now, the running job included
     mise run queue:run               # or run the worker in the foreground, any OS
 
 `queue/jobs.txt` is the backlog, one `mise run search` argument list per line, worked top to

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Restart the queue worker: uninstall, then install (rebuilds; the running job resumes from its checkpoint)"
+set -euo pipefail
+mise run queue:uninstall
+mise run queue:install

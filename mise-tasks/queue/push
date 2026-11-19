@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#MISE description="Commit and push everything under runs/ as it is now, including the job still running"
+set -euo pipefail
+git add runs
+if git diff --cached --quiet; then echo "nothing new under runs/"; else git commit -q -m "queue: results so far ($(date '+%Y-%m-%d %H:%M'))"; fi
+git pull --rebase --autostash -q origin main
+git push -q origin main
+echo "pushed: $(git log --oneline -1)"
