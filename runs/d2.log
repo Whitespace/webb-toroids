@@ -1,0 +1,626 @@
+through links [0, 0, 0, 259, 384, 409, 43, 0, 26, 0, 196]
+solids 127 seeds 1847 axtab [0, 0, 0, 2452, 1543, 813, 247, 0, 106, 0, 356] links [0, 0, 0, 34405, 36408, 20639, 697, 0, 530, 0, 9136]
+seed 0/1847 2s
+seed 10/1847 4s
+watch 10s tests 2145963018 hits 77163751 quick 69651911 validate_cpu_s 106.5
+  overlap-centre n=5542 cpu=0.0s | overlap-sphere n=3295318 cpu=5.9s | q-prescreen n=4019457 cpu=58.5s | q-proxy n=191546 cpu=42.1s
+seed 30/1847 15s
+seed 20/1847 17s
+watch 20s tests 3576958782 hits 149552695 quick 136738853 validate_cpu_s 217.1
+  overlap-centre n=10262 cpu=0.0s | overlap-sphere n=4897129 cpu=8.6s | q-prescreen n=7467905 cpu=105.3s | q-proxy n=438629 cpu=103.2s
+watch 30s tests 4938571081 hits 175083025 quick 156337062 validate_cpu_s 339.4
+  overlap-centre n=10617 cpu=0.0s | overlap-sphere n=5962830 cpu=10.6s | q-prescreen n=11985612 cpu=165.5s | q-proxy n=786919 cpu=163.3s
+watch 40s tests 6249081029 hits 201847523 quick 177282309 validate_cpu_s 458.6
+  overlap-centre n=10895 cpu=0.0s | overlap-sphere n=6853120 cpu=12.4s | q-prescreen n=16603442 cpu=226.9s | q-proxy n=1097785 cpu=219.3s
+watch 50s tests 8099132293 hits 233220320 quick 202380444 validate_cpu_s 577.5
+  overlap-centre n=12450 cpu=0.0s | overlap-sphere n=7586388 cpu=13.8s | q-prescreen n=21916783 cpu=295.5s | q-proxy n=1324305 cpu=268.1s
+seed 40/1847 55s
+seed 50/1847 56s
+watch 60s tests 9768978081 hits 282757168 quick 245976128 validate_cpu_s 686.5
+  overlap-centre n=15187 cpu=0.0s | overlap-sphere n=8194186 cpu=15.0s | q-prescreen n=27054466 cpu=359.9s | q-proxy n=1517246 cpu=311.6s
+watch 70s tests 11161209189 hits 318964482 quick 275511932 validate_cpu_s 817.9
+  overlap-centre n=17901 cpu=0.0s | overlap-sphere n=9700215 cpu=17.9s | q-prescreen n=31946203 cpu=427.3s | q-proxy n=1788261 cpu=372.6s
+watch 80s tests 11845161241 hits 378573190 quick 328717141 validate_cpu_s 947.1
+  overlap-centre n=17901 cpu=0.0s | overlap-sphere n=11533735 cpu=21.4s | q-prescreen n=36225807 cpu=490.1s | q-proxy n=2078651 cpu=435.5s
+watch 90s tests 12336793092 hits 395576369 quick 338200233 validate_cpu_s 1094.6
+  overlap-centre n=17921 cpu=0.0s | overlap-sphere n=13901820 cpu=26.1s | q-prescreen n=40631324 cpu=556.2s | q-proxy n=2825154 cpu=512.3s
+watch 100s tests 12812271824 hits 415480084 quick 351120671 validate_cpu_s 1242.3
+  overlap-centre n=17985 cpu=0.0s | overlap-sphere n=16317905 cpu=31.0s | q-prescreen n=44422848 cpu=614.5s | q-proxy n=3600739 cpu=596.8s
+seed 60/1847 101s
+watch 110s tests 13383349184 hits 474992794 quick 405784824 validate_cpu_s 1375.5
+  overlap-centre n=17985 cpu=0.0s | overlap-sphere n=17889281 cpu=34.0s | q-prescreen n=47275420 cpu=662.1s | q-proxy n=4025310 cpu=679.5s
+seed 90/1847 116s
+seed 80/1847 118s
+watch 120s tests 13926016503 hits 527428850 quick 453208956 validate_cpu_s 1512.9
+  overlap-centre n=17995 cpu=0.0s | overlap-sphere n=20346180 cpu=38.6s | q-prescreen n=49098906 cpu=698.9s | q-proxy n=4756859 cpu=775.4s
+watch 130s tests 14412272611 hits 558485386 quick 477983695 validate_cpu_s 1658.0
+  overlap-centre n=18037 cpu=0.0s | overlap-sphere n=23582264 cpu=44.8s | q-prescreen n=51139989 cpu=740.6s | q-proxy n=5761781 cpu=872.5s
+watch 140s tests 14764593998 hits 570672512 quick 483671459 validate_cpu_s 1809.8
+  overlap-centre n=18111 cpu=0.0s | overlap-sphere n=26920088 cpu=51.0s | q-prescreen n=53234755 cpu=783.3s | q-proxy n=6828156 cpu=975.4s
+watch 150s tests 15117220140 hits 583509338 quick 489725450 validate_cpu_s 1961.5
+  overlap-centre n=18141 cpu=0.0s | overlap-sphere n=30404489 cpu=57.8s | q-prescreen n=55399427 cpu=828.5s | q-proxy n=7961848 cpu=1075.2s
+watch 160s tests 15451963642 hits 595932485 quick 495335963 validate_cpu_s 2113.2
+  overlap-centre n=18237 cpu=0.0s | overlap-sphere n=33986426 cpu=64.6s | q-prescreen n=57473075 cpu=872.8s | q-proxy n=9118835 cpu=1175.7s
+watch 170s tests 15720458372 hits 605951011 quick 499087509 validate_cpu_s 2266.0
+  overlap-centre n=18289 cpu=0.0s | overlap-sphere n=37002387 cpu=70.5s | q-prescreen n=59753154 cpu=920.6s | q-proxy n=10089687 cpu=1274.8s
+seed 110/1847 180s
+watch 180s tests 16232169995 hits 616259923 quick 503815091 validate_cpu_s 2415.5
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=39411990 cpu=75.1s | q-prescreen n=62136508 cpu=969.9s | q-proxy n=10878058 cpu=1370.5s
+watch 190s tests 16786788024 hits 624459572 quick 507195984 validate_cpu_s 2562.9
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=41074367 cpu=78.3s | q-prescreen n=64828974 cpu=1025.4s | q-proxy n=11342030 cpu=1459.3s
+watch 200s tests 17197570935 hits 630571975 quick 508506200 validate_cpu_s 2711.1
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=42627922 cpu=81.3s | q-prescreen n=67662984 cpu=1083.7s | q-proxy n=11756543 cpu=1546.0s
+watch 210s tests 17895594431 hits 690660692 quick 562832850 validate_cpu_s 2841.5
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=45590048 cpu=86.6s | q-prescreen n=69989456 cpu=1130.9s | q-proxy n=12230125 cpu=1624.1s
+watch 220s tests 18804853508 hits 754963715 quick 622073629 validate_cpu_s 2966.0
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=47731965 cpu=90.7s | q-prescreen n=72469330 cpu=1182.0s | q-proxy n=12670536 cpu=1693.3s
+seed 120/1847 220s
+watch 230s tests 19688232336 hits 774265148 quick 635393413 validate_cpu_s 3108.0
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=50407357 cpu=95.5s | q-prescreen n=75364687 cpu=1241.6s | q-proxy n=13081461 cpu=1770.8s
+watch 240s tests 20340995173 hits 807899228 quick 664389391 validate_cpu_s 3245.2
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=51949700 cpu=98.6s | q-prescreen n=78056507 cpu=1296.7s | q-proxy n=13485321 cpu=1849.9s
+watch 250s tests 21122472828 hits 853090322 quick 704541327 validate_cpu_s 3379.8
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=54039979 cpu=102.9s | q-prescreen n=80627753 cpu=1349.2s | q-proxy n=13862970 cpu=1927.7s
+seed 100/1847 251s
+watch 260s tests 22218927823 hits 900821277 quick 747130242 validate_cpu_s 3506.7
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=56017942 cpu=106.5s | q-prescreen n=83461570 cpu=1405.9s | q-proxy n=14193228 cpu=1994.2s
+seed 140/1847 264s
+watch 270s tests 23512746961 hits 939582134 quick 780181270 validate_cpu_s 3636.2
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=58624789 cpu=111.4s | q-prescreen n=86121913 cpu=1459.1s | q-proxy n=14635891 cpu=2065.6s
+seed 130/1847 275s
+seed 160/1847 278s
+watch 280s tests 24753955492 hits 994643365 quick 830693272 validate_cpu_s 3753.4
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=60351592 cpu=114.7s | q-prescreen n=88648874 cpu=1510.4s | q-proxy n=14931306 cpu=2128.3s
+seed 70/1847 282s
+watch 290s tests 26037542834 hits 1042986005 quick 874014544 validate_cpu_s 3871.6
+  overlap-centre n=18321 cpu=0.0s | overlap-sphere n=61547045 cpu=117.0s | q-prescreen n=92224015 cpu=1568.1s | q-proxy n=15182178 cpu=2186.5s
+watch 300s tests 27266877549 hits 1062639827 quick 887605259 validate_cpu_s 3996.4
+  overlap-centre n=18325 cpu=0.0s | overlap-sphere n=62702892 cpu=119.2s | q-prescreen n=96893548 cpu=1633.7s | q-proxy n=15419828 cpu=2243.5s
+seed 180/1847 309s
+watch 310s tests 28420628828 hits 1083165253 quick 901527859 validate_cpu_s 4119.1
+  overlap-centre n=18495 cpu=0.0s | overlap-sphere n=63846142 cpu=121.4s | q-prescreen n=102137422 cpu=1705.3s | q-proxy n=15639897 cpu=2292.5s
+seed 170/1847 316s
+seed 150/1847 317s
+watch 320s tests 30284437335 hits 1117458768 quick 929319220 validate_cpu_s 4234.0
+  overlap-centre n=21801 cpu=0.0s | overlap-sphere n=64910798 cpu=123.7s | q-prescreen n=107393766 cpu=1777.2s | q-proxy n=15813215 cpu=2333.0s
+seed 190/1847 322s
+watch 330s tests 32690197164 hits 1149082294 quick 954082560 validate_cpu_s 4347.6
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=66327343 cpu=126.7s | overlap n=1 cpu=0.0s | q-prescreen n=112666864 cpu=1850.1s | q-proxy n=15979384 cpu=2370.8s
+seed 200/1847 332s
+watch 340s tests 33718232830 hits 1207566950 quick 1005403916 validate_cpu_s 4472.6
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=69590461 cpu=133.5s | overlap n=1 cpu=0.0s | q-prescreen n=116335775 cpu=1909.5s | q-proxy n=16210648 cpu=2429.6s
+watch 350s tests 35841755454 hits 1277296641 quick 1067935925 validate_cpu_s 4589.4
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=72893170 cpu=139.9s | overlap n=1 cpu=0.0s | q-prescreen n=120039828 cpu=1966.2s | q-proxy n=16401613 cpu=2483.2s
+seed 220/1847 351s
+seed 240/1847 359s
+seed 230/1847 360s
+watch 360s tests 37729034073 hits 1342421037 quick 1127410346 validate_cpu_s 4711.5
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=74445796 cpu=142.8s | overlap n=3 cpu=0.0s | q-prescreen n=123838634 cpu=2018.8s | q-proxy n=16700140 cpu=2549.9s
+seed 250/1847 368s
+watch 370s tests 39464427010 hits 1405044757 quick 1184407146 validate_cpu_s 4834.9
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=77001001 cpu=147.5s | overlap n=3 cpu=0.0s | q-prescreen n=126558354 cpu=2061.2s | q-proxy n=17052077 cpu=2626.2s
+seed 260/1847 380s
+watch 380s tests 40941172616 hits 1460815292 quick 1235176060 validate_cpu_s 4963.3
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=79696314 cpu=152.1s | overlap n=3 cpu=0.0s | q-prescreen n=128460423 cpu=2097.1s | q-proxy n=17456331 cpu=2714.1s
+watch 390s tests 41926080287 hits 1512150401 quick 1281725650 validate_cpu_s 5096.9
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=82187520 cpu=156.2s | overlap n=7 cpu=0.0s | q-prescreen n=130326600 cpu=2131.7s | q-proxy n=17884464 cpu=2808.9s
+seed 270/1847 391s
+watch 400s tests 43444945342 hits 1546276732 quick 1311629464 validate_cpu_s 5238.5
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=83881204 cpu=159.1s | overlap n=9 cpu=0.0s | q-prescreen n=132346021 cpu=2169.9s | q-proxy n=18393937 cpu=2909.5s
+seed 280/1847 406s
+watch 410s tests 45032707608 hits 1577334695 quick 1337852025 validate_cpu_s 5373.0
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=85551303 cpu=162.2s | overlap n=9 cpu=0.0s | q-prescreen n=135075522 cpu=2213.8s | q-proxy n=18829669 cpu=2996.9s
+watch 420s tests 46813923277 hits 1594082177 quick 1348611894 validate_cpu_s 5505.5
+  overlap-centre n=26187 cpu=0.0s | overlap-sphere n=87311567 cpu=165.3s | overlap n=9 cpu=0.0s | q-prescreen n=138955337 cpu=2269.7s | q-proxy n=19177206 cpu=3070.4s
+seed 300/1847 420s
+watch 430s tests 48643992300 hits 1623076465 quick 1371607778 validate_cpu_s 5633.2
+  overlap-centre n=28314 cpu=0.0s | overlap-sphere n=88854944 cpu=168.1s | overlap n=9 cpu=0.0s | q-prescreen n=143105394 cpu=2327.6s | q-proxy n=19480122 cpu=3137.4s
+seed 310/1847 433s
+seed 290/1847 439s
+watch 440s tests 51104457447 hits 1653828003 quick 1395388133 validate_cpu_s 5765.4
+  overlap-centre n=32743 cpu=0.0s | overlap-sphere n=90161446 cpu=170.6s | overlap n=9 cpu=0.0s | q-prescreen n=148464902 cpu=2399.7s | q-proxy n=19780796 cpu=3195.0s
+seed 320/1847 442s
+seed 340/1847 450s
+watch 450s tests 53337532829 hits 1680742832 quick 1415927646 validate_cpu_s 5902.9
+  overlap-centre n=39101 cpu=0.1s | overlap-sphere n=91695088 cpu=173.7s | overlap n=17 cpu=0.0s | q-prescreen n=152870560 cpu=2464.7s | q-proxy n=20210436 cpu=3264.5s
+seed 330/1847 455s
+watch 460s tests 55333841725 hits 1707513138 quick 1436737179 validate_cpu_s 6041.3
+  overlap-centre n=43240 cpu=0.1s | overlap-sphere n=93167193 cpu=176.5s | overlap n=21 cpu=0.0s | q-prescreen n=156887826 cpu=2525.3s | q-proxy n=20677704 cpu=3339.4s
+seed 350/1847 462s
+seed 360/1847 470s
+watch 470s tests 58761379471 hits 1754668854 quick 1477999269 validate_cpu_s 6162.8
+  overlap-centre n=58097 cpu=0.1s | overlap-sphere n=94698301 cpu=179.5s | overlap n=21 cpu=0.0s | q-prescreen n=160901919 cpu=2585.6s | q-proxy n=21011253 cpu=3397.6s
+seed 370/1847 474s
+watch 480s tests 60894548263 hits 1813474350 quick 1530108730 validate_cpu_s 6282.5
+  overlap-centre n=69866 cpu=0.1s | overlap-sphere n=97168415 cpu=184.1s | overlap n=21 cpu=0.0s | q-prescreen n=164827380 cpu=2648.3s | q-proxy n=21304293 cpu=3450.0s
+watch 490s tests 62201791956 hits 1862962717 quick 1573535565 validate_cpu_s 6411.8
+  overlap-centre n=71408 cpu=0.1s | overlap-sphere n=100152090 cpu=189.5s | overlap n=21 cpu=0.0s | q-prescreen n=167538536 cpu=2700.8s | q-proxy n=21665204 cpu=3521.4s
+seed 400/1847 490s
+watch 500s tests 62898016659 hits 1895209785 quick 1599746285 validate_cpu_s 6555.0
+  overlap-centre n=71419 cpu=0.1s | overlap-sphere n=103124006 cpu=195.0s | overlap n=21 cpu=0.0s | q-prescreen n=170198286 cpu=2752.7s | q-proxy n=22069787 cpu=3607.2s
+watch 510s tests 63611657419 hits 1919761306 quick 1618711067 validate_cpu_s 6701.6
+  overlap-centre n=71736 cpu=0.1s | overlap-sphere n=105685555 cpu=199.6s | overlap n=21 cpu=0.0s | q-prescreen n=172772896 cpu=2801.9s | q-proxy n=22520092 cpu=3700.0s
+seed 210/1847 512s
+seed 410/1847 512s
+watch 520s tests 64284197356 hits 1932313795 quick 1625399823 validate_cpu_s 6852.6
+  overlap-centre n=72972 cpu=0.1s | overlap-sphere n=108454454 cpu=204.7s | overlap n=21 cpu=0.0s | q-prescreen n=175432064 cpu=2853.6s | q-proxy n=22954481 cpu=3794.2s
+seed 390/1847 524s
+watch 530s tests 64941852707 hits 1959761341 quick 1647055236 validate_cpu_s 6998.0
+  overlap-centre n=72972 cpu=0.1s | overlap-sphere n=111355127 cpu=210.5s | overlap n=21 cpu=0.0s | q-prescreen n=177928603 cpu=2904.9s | q-proxy n=23349425 cpu=3882.5s
+seed 420/1847 537s
+watch 540s tests 66190847453 hits 1980289086 quick 1660466269 validate_cpu_s 7142.8
+  overlap-centre n=74831 cpu=0.1s | overlap-sphere n=115069306 cpu=217.3s | overlap n=21 cpu=0.0s | q-prescreen n=180895966 cpu=2963.3s | q-proxy n=23782743 cpu=3962.1s
+watch 550s tests 67310176000 hits 2003357571 quick 1676028896 validate_cpu_s 7286.9
+  overlap-centre n=77609 cpu=0.1s | overlap-sphere n=119094544 cpu=225.0s | overlap n=21 cpu=0.0s | q-prescreen n=183986435 cpu=3023.3s | q-proxy n=24170266 cpu=4038.5s
+seed 430/1847 558s
+watch 560s tests 68605099543 hits 2026011230 quick 1690438751 validate_cpu_s 7429.4
+  overlap-centre n=79468 cpu=0.1s | overlap-sphere n=123793603 cpu=234.1s | overlap n=21 cpu=0.0s | q-prescreen n=187262720 cpu=3090.5s | q-proxy n=24437165 cpu=4104.6s
+watch 570s tests 69684493580 hits 2049987506 quick 1705603291 validate_cpu_s 7572.9
+  overlap-centre n=82137 cpu=0.1s | overlap-sphere n=128815133 cpu=243.4s | overlap n=21 cpu=0.0s | q-prescreen n=190759207 cpu=3157.7s | q-proxy n=24727741 cpu=4171.7s
+seed 450/1847 571s
+seed 380/1847 574s
+watch 580s tests 70744761350 hits 2073632917 quick 1720126898 validate_cpu_s 7716.9
+  overlap-centre n=84127 cpu=0.1s | overlap-sphere n=134038191 cpu=252.9s | overlap n=21 cpu=0.0s | q-prescreen n=194362759 cpu=3225.9s | q-proxy n=25020977 cpu=4238.0s
+watch 590s tests 72087389465 hits 2102371396 quick 1741005121 validate_cpu_s 7857.7
+  overlap-centre n=88428 cpu=0.1s | overlap-sphere n=138194746 cpu=260.4s | overlap n=21 cpu=0.0s | q-prescreen n=197709823 cpu=3285.3s | q-proxy n=25373304 cpu=4311.8s
+seed 470/1847 594s
+seed 460/1847 595s
+watch 600s tests 73296249280 hits 2122897864 quick 1754845726 validate_cpu_s 8003.7
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=141591525 cpu=266.4s | overlap n=21 cpu=0.0s | q-prescreen n=200490269 cpu=3334.4s | q-proxy n=25880001 cpu=4402.7s
+seed 480/1847 608s
+watch 610s tests 74397633579 hits 2157981784 quick 1784093383 validate_cpu_s 8143.8
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=144684320 cpu=271.6s | overlap n=21 cpu=0.0s | q-prescreen n=202760609 cpu=3375.1s | q-proxy n=26353067 cpu=4497.0s
+watch 620s tests 75164058017 hits 2170892353 quick 1791019156 validate_cpu_s 8294.1
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=147755927 cpu=277.2s | overlap n=21 cpu=0.0s | q-prescreen n=205149020 cpu=3419.8s | q-proxy n=26877852 cpu=4597.0s
+watch 630s tests 75785173218 hits 2185130111 quick 1800269837 validate_cpu_s 8444.2
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=150054669 cpu=281.3s | overlap n=21 cpu=0.0s | q-prescreen n=207463408 cpu=3464.3s | q-proxy n=27251756 cpu=4698.5s
+watch 640s tests 76104741117 hits 2204164071 quick 1814948806 validate_cpu_s 8594.5
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=151799842 cpu=284.7s | overlap n=21 cpu=0.0s | q-prescreen n=209752637 cpu=3507.5s | q-proxy n=27572366 cpu=4802.1s
+watch 650s tests 76768932378 hits 2210535185 quick 1816756311 validate_cpu_s 8746.8
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=153547100 cpu=288.0s | overlap n=21 cpu=0.0s | q-prescreen n=212239118 cpu=3554.7s | q-proxy n=27902222 cpu=4903.9s
+seed 440/1847 655s
+watch 660s tests 77347833285 hits 2221366714 quick 1822439298 validate_cpu_s 8896.6
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=155901030 cpu=292.1s | overlap n=21 cpu=0.0s | q-prescreen n=214727438 cpu=3601.4s | q-proxy n=28208541 cpu=5002.9s
+watch 670s tests 78176672481 hits 2267933855 quick 1864629309 validate_cpu_s 9033.2
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=157740908 cpu=295.4s | overlap n=29 cpu=0.0s | q-prescreen n=216986001 cpu=3643.7s | q-proxy n=28487207 cpu=5094.0s
+watch 680s tests 79384389253 hits 2332175483 quick 1923105893 validate_cpu_s 9157.7
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=160835195 cpu=300.9s | overlap n=32 cpu=0.0s | q-prescreen n=219421572 cpu=3690.2s | q-proxy n=28722387 cpu=5166.5s
+seed 510/1847 690s
+watch 690s tests 80345372640 hits 2393166811 quick 1979140377 validate_cpu_s 9285.0
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=163242283 cpu=305.2s | overlap n=34 cpu=0.0s | q-prescreen n=221732007 cpu=3735.0s | q-proxy n=28961746 cpu=5244.7s
+watch 700s tests 81387454725 hits 2446988676 quick 2027926679 validate_cpu_s 9416.0
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=165539172 cpu=309.2s | overlap n=35 cpu=0.0s | q-prescreen n=224171835 cpu=3781.1s | q-proxy n=29260598 cpu=5325.6s
+seed 520/1847 703s
+seed 530/1847 707s
+watch 710s tests 82163044739 hits 2498158515 quick 2074139475 validate_cpu_s 9550.7
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=167825819 cpu=313.3s | overlap n=35 cpu=0.0s | q-prescreen n=226562297 cpu=3825.7s | q-proxy n=29540474 cpu=5411.6s
+watch 721s tests 82785140285 hits 2528773326 quick 2100797039 validate_cpu_s 9694.8
+  overlap-centre n=90406 cpu=0.1s | overlap-sphere n=169216733 cpu=315.9s | overlap n=36 cpu=0.0s | q-prescreen n=228813064 cpu=3868.7s | q-proxy n=29856024 cpu=5510.1s
+watch 731s tests 83302403643 hits 2551372951 quick 2119069766 validate_cpu_s 9840.1
+  overlap-centre n=91697 cpu=0.1s | overlap-sphere n=170797978 cpu=319.0s | overlap n=36 cpu=0.0s | q-prescreen n=231243518 cpu=3916.1s | q-proxy n=30170019 cpu=5604.9s
+seed 540/1847 731s
+watch 741s tests 84191486583 hits 2563542587 quick 2125962263 validate_cpu_s 9989.2
+  overlap-centre n=92306 cpu=0.1s | overlap-sphere n=173293625 cpu=323.5s | overlap n=36 cpu=0.0s | q-prescreen n=233678444 cpu=3962.3s | q-proxy n=30515894 cpu=5703.2s
+watch 751s tests 85242036321 hits 2570074530 quick 2127362301 validate_cpu_s 10137.6
+  overlap-centre n=92306 cpu=0.1s | overlap-sphere n=174875426 cpu=326.6s | overlap n=36 cpu=0.0s | q-prescreen n=236873003 cpu=4017.0s | q-proxy n=30871477 cpu=5793.9s
+seed 490/1847 760s
+watch 761s tests 85690007716 hits 2578001677 quick 2130316859 validate_cpu_s 10291.0
+  overlap-centre n=92306 cpu=0.1s | overlap-sphere n=176933260 cpu=330.3s | overlap n=36 cpu=0.0s | q-prescreen n=239171627 cpu=4062.8s | q-proxy n=31487575 cpu=5897.7s
+seed 560/1847 767s
+watch 771s tests 86851257361 hits 2605959169 quick 2152727893 validate_cpu_s 10432.1
+  overlap-centre n=92306 cpu=0.1s | overlap-sphere n=179721070 cpu=335.3s | overlap n=36 cpu=0.0s | q-prescreen n=241126969 cpu=4101.3s | q-proxy n=32290914 cpu=5995.4s
+watch 781s tests 87718329209 hits 2617966398 quick 2159889032 validate_cpu_s 10581.3
+  overlap-centre n=92306 cpu=0.1s | overlap-sphere n=181853549 cpu=339.1s | overlap n=36 cpu=0.0s | q-prescreen n=243055036 cpu=4139.8s | q-proxy n=33076396 cpu=6102.4s
+seed 500/1847 788s
+watch 791s tests 88238332044 hits 2637870660 quick 2175345795 validate_cpu_s 10729.6
+  overlap-centre n=92306 cpu=0.1s | overlap-sphere n=183518384 cpu=342.2s | overlap n=36 cpu=0.0s | q-prescreen n=244991254 cpu=4177.5s | q-proxy n=33922883 cpu=6209.8s
+watch 801s tests 89191362678 hits 2661795436 quick 2194926421 validate_cpu_s 10872.7
+  overlap-centre n=92306 cpu=0.1s | overlap-sphere n=185385072 cpu=345.6s | overlap n=36 cpu=0.0s | q-prescreen n=246516558 cpu=4207.3s | q-proxy n=34875032 cpu=6319.6s
+seed 550/1847 805s
+seed 580/1847 806s
+watch 811s tests 90065933227 hits 2668413752 quick 2197583736 validate_cpu_s 11024.0
+  overlap-centre n=92306 cpu=0.1s | overlap-sphere n=186862669 cpu=348.2s | overlap n=36 cpu=0.0s | q-prescreen n=248065249 cpu=4239.2s | q-proxy n=35809720 cpu=6436.4s
+watch 821s tests 90473198383 hits 2681045781 quick 2206569304 validate_cpu_s 11175.2
+  overlap-centre n=92306 cpu=0.1s | overlap-sphere n=188085245 cpu=350.7s | overlap n=36 cpu=0.0s | q-prescreen n=249688267 cpu=4273.1s | q-proxy n=36610575 cpu=6551.3s
+watch 831s tests 91424797829 hits 2702255444 quick 2224096510 validate_cpu_s 11318.4
+  overlap-centre n=94135 cpu=0.1s | overlap-sphere n=189646189 cpu=353.3s | overlap n=36 cpu=0.0s | q-prescreen n=251040104 cpu=4299.3s | q-proxy n=37378467 cpu=6665.7s
+watch 841s tests 92503100287 hits 2709344057 quick 2227399375 validate_cpu_s 11466.3
+  overlap-centre n=94206 cpu=0.1s | overlap-sphere n=190650653 cpu=355.3s | overlap n=36 cpu=0.0s | q-prescreen n=252986693 cpu=4332.7s | q-proxy n=38213072 cpu=6778.1s
+seed 590/1847 841s
+watch 851s tests 92738689187 hits 2713433810 quick 2227896396 validate_cpu_s 11621.9
+  overlap-centre n=94206 cpu=0.1s | overlap-sphere n=191877015 cpu=357.6s | overlap n=36 cpu=0.0s | q-prescreen n=254314002 cpu=4359.8s | q-proxy n=39252144 cpu=6904.3s
+watch 861s tests 93415662742 hits 2722211528 quick 2233156494 validate_cpu_s 11773.1
+  overlap-centre n=95628 cpu=0.1s | overlap-sphere n=193090071 cpu=360.1s | overlap n=36 cpu=0.0s | q-prescreen n=255562484 cpu=4384.9s | q-proxy n=40306806 cpu=7028.0s
+seed 600/1847 870s
+watch 871s tests 93975179816 hits 2730416793 quick 2236512488 validate_cpu_s 11924.5
+  overlap-centre n=96047 cpu=0.1s | overlap-sphere n=195082204 cpu=363.6s | overlap n=36 cpu=0.0s | q-prescreen n=257303154 cpu=4415.3s | q-proxy n=41422915 cpu=7145.5s
+watch 881s tests 94455620677 hits 2737474401 quick 2239282538 validate_cpu_s 12076.8
+  overlap-centre n=96106 cpu=0.1s | overlap-sphere n=196429252 cpu=366.2s | overlap n=36 cpu=0.0s | q-prescreen n=259129088 cpu=4448.1s | q-proxy n=42537356 cpu=7262.3s
+watch 891s tests 95112997648 hits 2741904480 quick 2239698872 validate_cpu_s 12228.7
+  overlap-centre n=96106 cpu=0.1s | overlap-sphere n=197805434 cpu=369.0s | overlap n=36 cpu=0.0s | q-prescreen n=260576349 cpu=4477.5s | q-proxy n=43727661 cpu=7382.1s
+watch 901s tests 95289181969 hits 2746163327 quick 2240132060 validate_cpu_s 12384.6
+  overlap-centre n=96106 cpu=0.1s | overlap-sphere n=199062295 cpu=371.3s | overlap n=36 cpu=0.0s | q-prescreen n=262072239 cpu=4507.4s | q-proxy n=44800561 cpu=7505.8s
+watch 911s tests 95908786976 hits 2752783132 quick 2242425016 validate_cpu_s 12537.7
+  overlap-centre n=96106 cpu=0.1s | overlap-sphere n=200641276 cpu=374.2s | overlap n=36 cpu=0.0s | q-prescreen n=263594620 cpu=4538.2s | q-proxy n=46026067 cpu=7625.1s
+watch 921s tests 96475888363 hits 2762076787 quick 2247297335 validate_cpu_s 12689.8
+  overlap-centre n=96106 cpu=0.1s | overlap-sphere n=202386678 cpu=377.2s | overlap n=36 cpu=0.0s | q-prescreen n=265096478 cpu=4567.9s | q-proxy n=47200122 cpu=7744.5s
+watch 931s tests 96753198101 hits 2779121504 quick 2260661060 validate_cpu_s 12839.6
+  overlap-centre n=96106 cpu=0.1s | overlap-sphere n=203512350 cpu=379.4s | overlap n=36 cpu=0.0s | q-prescreen n=266548705 cpu=4597.3s | q-proxy n=48303234 cpu=7862.8s
+watch 941s tests 97623363723 hits 2787370102 quick 2264680729 validate_cpu_s 12990.4
+  overlap-centre n=96106 cpu=0.1s | overlap-sphere n=205070108 cpu=382.3s | overlap n=36 cpu=0.0s | q-prescreen n=268042707 cpu=4627.1s | q-proxy n=49480455 cpu=7980.8s
+watch 951s tests 98035904984 hits 2805548228 quick 2279007759 validate_cpu_s 13139.2
+  overlap-centre n=96106 cpu=0.1s | overlap-sphere n=206418487 cpu=384.8s | overlap n=36 cpu=0.0s | q-prescreen n=269610456 cpu=4658.8s | q-proxy n=50415353 cpu=8095.5s
+watch 961s tests 98762989197 hits 2818763395 quick 2288872421 validate_cpu_s 13288.1
+  overlap-centre n=97528 cpu=0.1s | overlap-sphere n=207245999 cpu=386.3s | overlap n=36 cpu=0.0s | q-prescreen n=271164483 cpu=4689.4s | q-proxy n=51382905 cpu=8212.3s
+watch 971s tests 99575330847 hits 2823472237 quick 2289473851 validate_cpu_s 13438.3
+  overlap-centre n=97566 cpu=0.1s | overlap-sphere n=208017393 cpu=387.8s | overlap n=36 cpu=0.0s | q-prescreen n=273568109 cpu=4729.0s | q-proxy n=52315228 cpu=8321.3s
+seed 630/1847 971s
+watch 981s tests 100242931287 hits 2833452390 quick 2295177961 validate_cpu_s 13588.8
+  overlap-centre n=98006 cpu=0.1s | overlap-sphere n=209677901 cpu=390.6s | overlap n=36 cpu=0.0s | q-prescreen n=275129995 cpu=4761.8s | q-proxy n=53368463 cpu=8436.3s
+watch 991s tests 100739378974 hits 2837731249 quick 2295706940 validate_cpu_s 13743.4
+  overlap-centre n=98006 cpu=0.1s | overlap-sphere n=210678498 cpu=392.5s | overlap n=36 cpu=0.0s | q-prescreen n=276796937 cpu=4795.9s | q-proxy n=54450809 cpu=8554.9s
+watch 1001s tests 101115586265 hits 2847045790 quick 2301044740 validate_cpu_s 13895.3
+  overlap-centre n=99428 cpu=0.1s | overlap-sphere n=211850123 cpu=394.9s | overlap n=36 cpu=0.0s | q-prescreen n=278348809 cpu=4827.6s | q-proxy n=55702654 cpu=8672.7s
+watch 1011s tests 101550163139 hits 2851955949 quick 2301583980 validate_cpu_s 14048.1
+  overlap-centre n=99428 cpu=0.1s | overlap-sphere n=212874343 cpu=396.9s | overlap n=36 cpu=0.0s | q-prescreen n=280393558 cpu=4864.6s | q-proxy n=57005119 cpu=8786.4s
+watch 1021s tests 102753639541 hits 2862982740 quick 2307312554 validate_cpu_s 14194.3
+  overlap-centre n=99906 cpu=0.1s | overlap-sphere n=215063878 cpu=401.1s | overlap n=36 cpu=0.0s | q-prescreen n=282336611 cpu=4899.8s | q-proxy n=58169741 cpu=8893.3s
+seed 650/1847 1022s
+seed 570/1847 1025s
+watch 1031s tests 103814998871 hits 2872426421 quick 2312491920 validate_cpu_s 14340.1
+  overlap-centre n=101328 cpu=0.1s | overlap-sphere n=216410994 cpu=403.9s | overlap n=36 cpu=0.0s | q-prescreen n=284159834 cpu=4932.8s | q-proxy n=59262635 cpu=9003.2s
+seed 660/1847 1039s
+watch 1041s tests 104867855462 hits 2883038974 quick 2318097456 validate_cpu_s 14487.1
+  overlap-centre n=101806 cpu=0.1s | overlap-sphere n=218679544 cpu=408.5s | overlap n=36 cpu=0.0s | q-prescreen n=285847674 cpu=4965.1s | q-proxy n=60312440 cpu=9113.3s
+watch 1051s tests 105450382455 hits 2892297343 quick 2323317368 validate_cpu_s 14636.4
+  overlap-centre n=103228 cpu=0.1s | overlap-sphere n=220098934 cpu=411.7s | overlap n=36 cpu=0.0s | q-prescreen n=287425199 cpu=4996.3s | q-proxy n=61352579 cpu=9228.3s
+watch 1061s tests 106251642788 hits 2901414332 quick 2327190374 validate_cpu_s 14786.0
+  overlap-centre n=103647 cpu=0.1s | overlap-sphere n=222353004 cpu=415.8s | overlap n=36 cpu=0.0s | q-prescreen n=289195196 cpu=5027.6s | q-proxy n=62572060 cpu=9342.5s
+watch 1071s tests 107233712241 hits 2908721267 quick 2329513575 validate_cpu_s 14936.1
+  overlap-centre n=103706 cpu=0.1s | overlap-sphere n=224299912 cpu=419.5s | overlap n=36 cpu=0.0s | q-prescreen n=290849123 cpu=5057.8s | q-proxy n=63954915 cpu=9458.6s
+watch 1081s tests 108143156381 hits 2918370733 quick 2334613168 validate_cpu_s 15084.0
+  overlap-centre n=105128 cpu=0.1s | overlap-sphere n=225852047 cpu=422.5s | overlap n=36 cpu=0.0s | q-prescreen n=292622194 cpu=5091.8s | q-proxy n=65178144 cpu=9569.6s
+watch 1091s tests 108804722018 hits 2928234210 quick 2338974372 validate_cpu_s 15233.3
+  overlap-centre n=105547 cpu=0.1s | overlap-sphere n=227962735 cpu=426.4s | overlap n=36 cpu=0.0s | q-prescreen n=294880579 cpu=5131.0s | q-proxy n=66310921 cpu=9675.8s
+seed 680/1847 1094s
+watch 1101s tests 109549227483 hits 2936178501 quick 2342362063 validate_cpu_s 15383.9
+  overlap-centre n=105828 cpu=0.1s | overlap-sphere n=229625703 cpu=429.6s | overlap n=36 cpu=0.0s | q-prescreen n=296514649 cpu=5163.5s | q-proxy n=67570235 cpu=9790.7s
+seed 670/1847 1107s
+watch 1111s tests 110229775368 hits 2944348983 quick 2345879115 validate_cpu_s 15533.4
+  overlap-centre n=107028 cpu=0.1s | overlap-sphere n=231084606 cpu=432.5s | overlap n=36 cpu=0.0s | q-prescreen n=298407944 cpu=5198.6s | q-proxy n=68870262 cpu=9902.1s
+watch 1121s tests 110674359252 hits 2949461647 quick 2346283859 validate_cpu_s 15686.1
+  overlap-centre n=107028 cpu=0.1s | overlap-sphere n=232316232 cpu=435.0s | overlap n=36 cpu=0.0s | q-prescreen n=300847695 cpu=5243.5s | q-proxy n=69906770 cpu=10007.5s
+seed 610/1847 1125s
+watch 1131s tests 111721890299 hits 2960201523 quick 2351533830 validate_cpu_s 15834.3
+  overlap-centre n=107466 cpu=0.1s | overlap-sphere n=234641977 cpu=439.0s | overlap n=36 cpu=0.0s | q-prescreen n=302840998 cpu=5280.8s | q-proxy n=71077243 cpu=10114.4s
+seed 700/1847 1134s
+watch 1141s tests 112494545204 hits 2970499953 quick 2357088311 validate_cpu_s 15983.0
+  overlap-centre n=108928 cpu=0.1s | overlap-sphere n=236064966 cpu=441.7s | overlap n=36 cpu=0.0s | q-prescreen n=305051622 cpu=5321.4s | q-proxy n=72186074 cpu=10219.8s
+seed 620/1847 1150s
+watch 1151s tests 113271271782 hits 2978622632 quick 2359866654 validate_cpu_s 16132.2
+  overlap-centre n=109347 cpu=0.1s | overlap-sphere n=238074038 cpu=445.5s | overlap n=36 cpu=0.0s | q-prescreen n=307404511 cpu=5364.6s | q-proxy n=73168036 cpu=10322.0s
+watch 1161s tests 113862962012 hits 2991145230 quick 2367743203 validate_cpu_s 16280.7
+  overlap-centre n=110936 cpu=0.1s | overlap-sphere n=239796376 cpu=448.8s | overlap n=36 cpu=0.0s | q-prescreen n=309255968 cpu=5400.3s | q-proxy n=74238729 cpu=10431.5s
+seed 710/1847 1167s
+watch 1171s tests 115056711617 hits 2997092668 quick 2368836470 validate_cpu_s 16427.5
+  overlap-centre n=113860 cpu=0.1s | overlap-sphere n=241178921 cpu=451.4s | overlap n=36 cpu=0.0s | q-prescreen n=311676511 cpu=5440.1s | q-proxy n=75286881 cpu=10535.8s
+seed 640/1847 1179s
+watch 1181s tests 115849252565 hits 3006585672 quick 2372980882 validate_cpu_s 16570.2
+  overlap-centre n=113860 cpu=0.1s | overlap-sphere n=242310344 cpu=453.4s | overlap n=36 cpu=0.0s | q-prescreen n=315076211 cpu=5490.4s | q-proxy n=76104358 cpu=10626.2s
+watch 1191s tests 116439812445 hits 3016369991 quick 2375947994 validate_cpu_s 16717.9
+  overlap-centre n=113860 cpu=0.1s | overlap-sphere n=243495276 cpu=455.6s | overlap n=36 cpu=0.0s | q-prescreen n=319840881 cpu=5554.4s | q-proxy n=76971943 cpu=10707.8s
+watch 1201s tests 117295851194 hits 3027408091 quick 2380236744 validate_cpu_s 16859.0
+  overlap-centre n=113860 cpu=0.1s | overlap-sphere n=244334124 cpu=457.3s | overlap n=36 cpu=0.0s | q-prescreen n=325130254 cpu=5625.1s | q-proxy n=77593054 cpu=10776.5s
+seed 720/1847 1208s
+watch 1211s tests 118520805366 hits 3042714956 quick 2389144873 validate_cpu_s 16992.2
+  overlap-centre n=114492 cpu=0.1s | overlap-sphere n=245001922 cpu=458.6s | overlap n=36 cpu=0.0s | q-prescreen n=330393223 cpu=5692.3s | q-proxy n=78060430 cpu=10841.1s
+seed 730/1847 1212s
+seed 740/1847 1221s
+watch 1221s tests 120684750393 hits 3058967133 quick 2399439808 validate_cpu_s 17122.6
+  overlap-centre n=122292 cpu=0.2s | overlap-sphere n=245603561 cpu=459.7s | overlap n=36 cpu=0.0s | q-prescreen n=335235718 cpu=5754.2s | q-proxy n=78565763 cpu=10908.5s
+seed 750/1847 1226s
+seed 760/1847 1229s
+watch 1231s tests 125651571899 hits 3078455658 quick 2413570807 validate_cpu_s 17244.6
+  overlap-centre n=128287 cpu=0.2s | overlap-sphere n=246101156 cpu=460.7s | overlap n=36 cpu=0.0s | q-prescreen n=339672229 cpu=5810.4s | q-proxy n=78983184 cpu=10973.4s
+seed 770/1847 1231s
+seed 780/1847 1233s
+seed 790/1847 1234s
+seed 800/1847 1236s
+seed 810/1847 1237s
+seed 820/1847 1239s
+watch 1241s tests 137237181387 hits 3116742651 quick 2448432039 validate_cpu_s 17321.2
+  overlap-centre n=136612 cpu=0.2s | overlap-sphere n=246519257 cpu=461.4s | overlap n=36 cpu=0.0s | q-prescreen n=342477705 cpu=5845.8s | q-proxy n=79176981 cpu=11013.8s
+seed 840/1847 1241s
+seed 850/1847 1242s
+seed 860/1847 1243s
+seed 830/1847 1244s
+seed 870/1847 1245s
+seed 880/1847 1248s
+seed 940/1847 1251s
+watch 1251s tests 153402117179 hits 3179462053 quick 2507644021 validate_cpu_s 17385.4
+  overlap-centre n=142306 cpu=0.2s | overlap-sphere n=247900701 cpu=463.8s | overlap n=36 cpu=0.0s | q-prescreen n=344389362 cpu=5878.8s | q-proxy n=79385594 cpu=11042.6s
+seed 950/1847 1252s
+seed 970/1847 1254s
+seed 980/1847 1255s
+seed 890/1847 1255s
+seed 990/1847 1257s
+seed 900/1847 1258s
+seed 1000/1847 1258s
+seed 960/1847 1258s
+seed 910/1847 1259s
+seed 920/1847 1259s
+seed 1020/1847 1260s
+seed 930/1847 1260s
+seed 690/1847 1260s
+seed 1030/1847 1260s
+watch 1261s tests 169241638606 hits 3255329183 quick 2579995085 validate_cpu_s 17446.4
+  overlap-centre n=148456 cpu=0.2s | overlap-sphere n=249628492 cpu=466.9s | overlap n=36 cpu=0.0s | q-prescreen n=345965652 cpu=5908.5s | q-proxy n=79591444 cpu=11070.8s
+seed 1010/1847 1261s
+seed 1050/1847 1261s
+seed 1060/1847 1262s
+seed 1070/1847 1263s
+seed 1080/1847 1264s
+seed 1090/1847 1264s
+seed 1040/1847 1265s
+seed 1100/1847 1266s
+seed 1160/1847 1269s
+seed 1170/1847 1270s
+watch 1271s tests 190224004995 hits 3326208374 quick 2647834004 validate_cpu_s 17498.1
+  overlap-centre n=156874 cpu=0.2s | overlap-sphere n=251047673 cpu=469.3s | overlap n=36 cpu=0.0s | q-prescreen n=347416581 cpu=5935.7s | q-proxy n=79753181 cpu=11092.9s
+seed 1190/1847 1271s
+seed 1200/1847 1272s
+seed 1210/1847 1273s
+seed 1220/1847 1274s
+seed 1230/1847 1276s
+seed 1180/1847 1276s
+seed 1110/1847 1276s
+seed 1240/1847 1277s
+seed 1250/1847 1277s
+seed 1120/1847 1277s
+seed 1130/1847 1278s
+seed 1270/1847 1278s
+seed 1280/1847 1279s
+seed 1140/1847 1279s
+seed 1150/1847 1280s
+watch 1281s tests 205400755863 hits 3407161833 quick 2725948662 validate_cpu_s 17541.3
+  overlap-centre n=165880 cpu=0.2s | overlap-sphere n=251931937 cpu=470.6s | overlap n=42 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=349165953 cpu=5960.3s | q-proxy n=79949328 cpu=11110.1s | nonmanifold n=2 cpu=0.0s | pinch n=1 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1290/1847 1282s
+seed 1260/1847 1282s
+seed 1300/1847 1287s
+seed 1310/1847 1289s
+watch 1291s tests 209134204319 hits 3458033508 quick 2771574064 validate_cpu_s 17622.3
+  overlap-centre n=177397 cpu=0.2s | overlap-sphere n=252556534 cpu=471.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=353441010 cpu=6008.4s | q-proxy n=80284427 cpu=11142.0s | nonmanifold n=2 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1320/1847 1292s
+seed 1330/1847 1296s
+watch 1301s tests 213040598985 hits 3487275952 quick 2792980041 validate_cpu_s 17741.7
+  overlap-centre n=183171 cpu=0.2s | overlap-sphere n=254791523 cpu=476.0s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=358348825 cpu=6075.5s | q-proxy n=80972353 cpu=11189.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1350/1847 1304s
+watch 1311s tests 215590254381 hits 3507653978 quick 2805714389 validate_cpu_s 17880.6
+  overlap-centre n=185464 cpu=0.2s | overlap-sphere n=257367044 cpu=480.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=362437981 cpu=6133.8s | q-proxy n=81949003 cpu=11265.7s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1340/1847 1312s
+watch 1321s tests 217092747888 hits 3536304590 quick 2827635795 validate_cpu_s 18014.1
+  overlap-centre n=192655 cpu=0.2s | overlap-sphere n=259705709 cpu=485.5s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=366056854 cpu=6183.1s | q-proxy n=82713482 cpu=11345.3s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1331s tests 217948642302 hits 3551445505 quick 2835678647 validate_cpu_s 18159.2
+  overlap-centre n=193338 cpu=0.2s | overlap-sphere n=262410595 cpu=490.5s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=369576812 cpu=6234.2s | q-proxy n=83586013 cpu=11434.3s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1360/1847 1337s
+watch 1341s tests 219537562207 hits 3566650107 quick 2844700884 validate_cpu_s 18303.0
+  overlap-centre n=196025 cpu=0.2s | overlap-sphere n=265172477 cpu=495.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=371729810 cpu=6267.1s | q-proxy n=84850899 cpu=11540.2s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1380/1847 1343s
+watch 1351s tests 221325433496 hits 3576521946 quick 2848995845 validate_cpu_s 18448.9
+  overlap-centre n=196276 cpu=0.2s | overlap-sphere n=267292540 cpu=499.1s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=373969246 cpu=6300.5s | q-proxy n=86068001 cpu=11649.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1370/1847 1355s
+watch 1361s tests 222031703125 hits 3588962745 quick 2855600604 validate_cpu_s 18598.0
+  overlap-centre n=197118 cpu=0.2s | overlap-sphere n=270138993 cpu=503.8s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=375704471 cpu=6332.3s | q-proxy n=87321462 cpu=11761.6s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1400/1847 1366s
+watch 1371s tests 223237612329 hits 3598782203 quick 2860513306 validate_cpu_s 18744.8
+  overlap-centre n=199286 cpu=0.2s | overlap-sphere n=271832803 cpu=506.7s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=377765256 cpu=6365.8s | q-proxy n=88471473 cpu=11872.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1410/1847 1375s
+watch 1381s tests 224389328293 hits 3610693443 quick 2867586685 validate_cpu_s 18889.9
+  overlap-centre n=201932 cpu=0.2s | overlap-sphere n=273517964 cpu=509.7s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=379793737 cpu=6399.1s | q-proxy n=89593100 cpu=11980.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1420/1847 1383s
+seed 1390/1847 1383s
+seed 1430/1847 1388s
+seed 1440/1847 1390s
+watch 1391s tests 226036508339 hits 3617546878 quick 2868716319 validate_cpu_s 19031.1
+  overlap-centre n=202312 cpu=0.2s | overlap-sphere n=274689598 cpu=511.8s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=383363894 cpu=6448.1s | q-proxy n=90574699 cpu=12070.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1450/1847 1399s
+watch 1401s tests 227846234855 hits 3627095893 quick 2870845115 validate_cpu_s 19168.9
+  overlap-centre n=202772 cpu=0.2s | overlap-sphere n=275622215 cpu=513.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=388973652 cpu=6521.6s | q-proxy n=91452124 cpu=12133.4s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1411s tests 229002561822 hits 3637889859 quick 2874336635 validate_cpu_s 19313.7
+  overlap-centre n=203898 cpu=0.3s | overlap-sphere n=276965744 cpu=516.1s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=393947341 cpu=6589.4s | q-proxy n=92436177 cpu=12207.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1460/1847 1413s
+watch 1421s tests 229810434035 hits 3651882739 quick 2881839096 validate_cpu_s 19460.6
+  overlap-centre n=203898 cpu=0.3s | overlap-sphere n=278264147 cpu=518.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=398515996 cpu=6656.0s | q-proxy n=93059557 cpu=12286.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1431s tests 230970099953 hits 3665539040 quick 2889451203 validate_cpu_s 19606.2
+  overlap-centre n=205104 cpu=0.3s | overlap-sphere n=279618925 cpu=520.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=402741225 cpu=6717.4s | q-proxy n=93522503 cpu=12367.6s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1441s tests 231591426711 hits 3673505548 quick 2891232055 validate_cpu_s 19758.2
+  overlap-centre n=205104 cpu=0.3s | overlap-sphere n=281205452 cpu=523.7s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=406554841 cpu=6770.5s | q-proxy n=94307979 cpu=12463.7s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1451s tests 232680977437 hits 3688163740 quick 2901528910 validate_cpu_s 19903.9
+  overlap-centre n=206310 cpu=0.3s | overlap-sphere n=282687500 cpu=526.3s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=408842484 cpu=6809.4s | q-proxy n=94898448 cpu=12568.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1461s tests 233706173727 hits 3698110301 quick 2907396472 validate_cpu_s 20053.7
+  overlap-centre n=206544 cpu=0.3s | overlap-sphere n=284492772 cpu=529.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=410522406 cpu=6841.5s | q-proxy n=95491987 cpu=12682.5s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1490/1847 1464s
+watch 1471s tests 234946143166 hits 3707833137 quick 2913480260 validate_cpu_s 20201.5
+  overlap-centre n=208722 cpu=0.3s | overlap-sphere n=286403830 cpu=532.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=411478345 cpu=6859.6s | q-proxy n=96261860 cpu=12809.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1510/1847 1481s
+watch 1481s tests 235887694574 hits 3717904885 quick 2919288432 validate_cpu_s 20350.5
+  overlap-centre n=210162 cpu=0.3s | overlap-sphere n=288643690 cpu=536.3s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=412372196 cpu=6876.9s | q-proxy n=97390301 cpu=12937.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1470/1847 1483s
+seed 1520/1847 1484s
+watch 1491s tests 237231629156 hits 3729884533 quick 2926897474 validate_cpu_s 20497.1
+  overlap-centre n=212574 cpu=0.3s | overlap-sphere n=290929499 cpu=539.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=413381232 cpu=6895.4s | q-proxy n=98463662 cpu=13061.5s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1480/1847 1499s
+watch 1501s tests 238088723660 hits 3737603048 quick 2930367577 validate_cpu_s 20648.6
+  overlap-centre n=213666 cpu=0.3s | overlap-sphere n=293201681 cpu=543.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=414300915 cpu=6913.5s | q-proxy n=99519164 cpu=13191.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1540/1847 1505s
+seed 1550/1847 1510s
+watch 1511s tests 238712406852 hits 3757117746 quick 2945621523 validate_cpu_s 20792.0
+  overlap-centre n=214902 cpu=0.3s | overlap-sphere n=295235372 cpu=547.2s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=415616225 cpu=6938.1s | q-proxy n=100429670 cpu=13306.4s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1560/1847 1516s
+watch 1521s tests 239157537281 hits 3772834905 quick 2956728936 validate_cpu_s 20939.7
+  overlap-centre n=215052 cpu=0.3s | overlap-sphere n=297511192 cpu=550.7s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=417518655 cpu=6973.1s | q-proxy n=100860987 cpu=13415.6s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1500/1847 1524s
+watch 1531s tests 239507589159 hits 3782924374 quick 2961812055 validate_cpu_s 21091.2
+  overlap-centre n=215202 cpu=0.3s | overlap-sphere n=300007109 cpu=555.2s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=419769726 cpu=7017.3s | q-proxy n=101120190 cpu=13518.5s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1570/1847 1532s
+watch 1541s tests 239994297132 hits 3802050448 quick 2976386138 validate_cpu_s 21235.2
+  overlap-centre n=215202 cpu=0.3s | overlap-sphere n=302252974 cpu=559.1s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=421738510 cpu=7054.8s | q-proxy n=101457601 cpu=13621.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1590/1847 1547s
+watch 1551s tests 240396077991 hits 3812274466 quick 2981454104 validate_cpu_s 21386.4
+  overlap-centre n=215502 cpu=0.3s | overlap-sphere n=304827980 cpu=563.3s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=424006843 cpu=7096.8s | q-proxy n=101769940 cpu=13726.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1530/1847 1553s
+watch 1561s tests 240671954572 hits 3818389692 quick 2981926573 validate_cpu_s 21540.9
+  overlap-centre n=215502 cpu=0.3s | overlap-sphere n=307646867 cpu=568.2s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=426541977 cpu=7145.2s | q-proxy n=102058679 cpu=13827.2s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1580/1847 1569s
+watch 1571s tests 240991132236 hits 3825118494 quick 2982679433 validate_cpu_s 21694.9
+  overlap-centre n=215652 cpu=0.3s | overlap-sphere n=310650171 cpu=573.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=429236916 cpu=7196.7s | q-proxy n=102336262 cpu=13924.5s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1600/1847 1572s
+watch 1581s tests 241267026197 hits 3830754085 quick 2983351410 validate_cpu_s 21849.2
+  overlap-centre n=215802 cpu=0.3s | overlap-sphere n=313121359 cpu=577.8s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=431440785 cpu=7240.1s | q-proxy n=102624720 cpu=14031.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1591s tests 241514216786 hits 3836560384 quick 2983799561 validate_cpu_s 22004.0
+  overlap-centre n=215802 cpu=0.3s | overlap-sphere n=315794524 cpu=582.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=433848924 cpu=7287.9s | q-proxy n=102901464 cpu=14133.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1601s tests 241792966426 hits 3842419081 quick 2984489852 validate_cpu_s 22158.5
+  overlap-centre n=215952 cpu=0.3s | overlap-sphere n=318395940 cpu=587.1s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=436109481 cpu=7329.9s | q-proxy n=103207762 cpu=14241.2s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1611s tests 242113849339 hits 3848462293 quick 2985207190 validate_cpu_s 22312.8
+  overlap-centre n=216102 cpu=0.3s | overlap-sphere n=321043587 cpu=591.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=438474330 cpu=7374.3s | q-proxy n=103521113 cpu=14346.6s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1620/1847 1611s
+watch 1621s tests 242751798268 hits 3856890047 quick 2986310347 validate_cpu_s 22462.2
+  overlap-centre n=216348 cpu=0.3s | overlap-sphere n=325219957 cpu=598.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=441292469 cpu=7424.0s | q-proxy n=103850846 cpu=14439.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1630/1847 1627s
+watch 1631s tests 243720659934 hits 3865226965 quick 2988004346 validate_cpu_s 22610.1
+  overlap-centre n=216568 cpu=0.3s | overlap-sphere n=329207726 cpu=605.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=443491719 cpu=7467.3s | q-proxy n=104306497 cpu=14536.5s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1640/1847 1639s
+watch 1641s tests 244635190029 hits 3875031392 quick 2991561072 validate_cpu_s 22757.1
+  overlap-centre n=216606 cpu=0.3s | overlap-sphere n=333357125 cpu=612.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=444918353 cpu=7494.5s | q-proxy n=104978255 cpu=14649.4s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1650/1847 1651s
+watch 1651s tests 245803342832 hits 3884032064 quick 2993827550 validate_cpu_s 22902.6
+  overlap-centre n=216810 cpu=0.3s | overlap-sphere n=337786904 cpu=620.2s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=446536394 cpu=7520.9s | q-proxy n=105664298 cpu=14761.2s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1661s tests 246609340284 hits 3893562376 quick 2997561674 validate_cpu_s 23051.8
+  overlap-centre n=216884 cpu=0.3s | overlap-sphere n=341868222 cpu=626.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=447210558 cpu=7534.0s | q-proxy n=106704972 cpu=14890.6s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1671s tests 247446925277 hits 3903216437 quick 3000897763 validate_cpu_s 23201.4
+  overlap-centre n=216884 cpu=0.3s | overlap-sphere n=346553886 cpu=634.3s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=447782468 cpu=7544.6s | q-proxy n=107765432 cpu=15022.2s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1681s tests 248156942448 hits 3909530457 quick 3002735576 validate_cpu_s 23353.1
+  overlap-centre n=216884 cpu=0.3s | overlap-sphere n=349419531 cpu=638.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=448272047 cpu=7554.0s | q-proxy n=108886288 cpu=15159.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1691s tests 248882225567 hits 3917799612 quick 3006521554 validate_cpu_s 23503.4
+  overlap-centre n=216884 cpu=0.3s | overlap-sphere n=352392242 cpu=643.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=448713269 cpu=7562.6s | q-proxy n=109955565 cpu=15297.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1701s tests 249124330321 hits 3923243187 quick 3007154216 validate_cpu_s 23658.6
+  overlap-centre n=216884 cpu=0.3s | overlap-sphere n=355627339 cpu=648.7s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=449144542 cpu=7570.9s | q-proxy n=111100111 cpu=15438.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1610/1847 1703s
+watch 1711s tests 249602323500 hits 3930468886 quick 3010930877 validate_cpu_s 23811.5
+  overlap-centre n=216884 cpu=0.3s | overlap-sphere n=357538478 cpu=651.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=449503215 cpu=7577.9s | q-proxy n=112279309 cpu=15581.6s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1721s tests 249981659770 hits 3933972330 quick 3011068471 validate_cpu_s 23966.8
+  overlap-centre n=216884 cpu=0.3s | overlap-sphere n=359322250 cpu=654.3s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=449791893 cpu=7583.9s | q-proxy n=113572725 cpu=15728.3s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1690/1847 1727s
+watch 1731s tests 250251589638 hits 3940012600 quick 3012682933 validate_cpu_s 24121.7
+  overlap-centre n=216884 cpu=0.3s | overlap-sphere n=362132211 cpu=658.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=450056109 cpu=7589.2s | q-proxy n=114924341 cpu=15873.3s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1741s tests 250647676062 hits 3946331070 quick 3015331539 validate_cpu_s 24274.6
+  overlap-centre n=216934 cpu=0.3s | overlap-sphere n=363735641 cpu=661.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=450833503 cpu=7599.9s | q-proxy n=116213401 cpu=16013.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1751s tests 251286665382 hits 3952001306 quick 3016760407 validate_cpu_s 24427.0
+  overlap-centre n=217062 cpu=0.3s | overlap-sphere n=366093992 cpu=664.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=451269685 cpu=7607.1s | q-proxy n=117660322 cpu=16154.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1700/1847 1754s
+seed 1660/1847 1756s
+watch 1761s tests 251811755874 hits 3955125636 quick 3017109159 validate_cpu_s 24580.7
+  overlap-centre n=217200 cpu=0.3s | overlap-sphere n=366501262 cpu=665.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=452106728 cpu=7618.1s | q-proxy n=119191181 cpu=16296.7s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1771s tests 252175836225 hits 3958106277 quick 3017209420 validate_cpu_s 24735.5
+  overlap-centre n=217200 cpu=0.3s | overlap-sphere n=366971464 cpu=666.5s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=452930731 cpu=7630.0s | q-proxy n=120777337 cpu=16438.7s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1781s tests 252981834523 hits 3963576978 quick 3018068488 validate_cpu_s 24885.6
+  overlap-centre n=217438 cpu=0.3s | overlap-sphere n=369441837 cpu=670.2s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=453459934 cpu=7638.4s | q-proxy n=122389166 cpu=16576.6s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1791s tests 253298539111 hits 3968395924 quick 3019180756 validate_cpu_s 25040.0
+  overlap-centre n=217516 cpu=0.3s | overlap-sphere n=371045733 cpu=672.7s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=453921688 cpu=7645.4s | q-proxy n=124030131 cpu=16721.5s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1801s tests 253522729277 hits 3971186604 quick 3019271439 validate_cpu_s 25196.4
+  overlap-centre n=217516 cpu=0.3s | overlap-sphere n=371469038 cpu=673.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=454433858 cpu=7652.8s | q-proxy n=125794640 cpu=16869.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1811s tests 254045780246 hits 3975679010 quick 3019543196 validate_cpu_s 25349.4
+  overlap-centre n=217612 cpu=0.3s | overlap-sphere n=373440852 cpu=676.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=454882987 cpu=7659.5s | q-proxy n=127594246 cpu=17013.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1720/1847 1818s
+watch 1821s tests 254655102470 hits 3981337620 quick 3021203468 validate_cpu_s 25501.5
+  overlap-centre n=217832 cpu=0.3s | overlap-sphere n=375324456 cpu=679.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=455374106 cpu=7666.8s | q-proxy n=129217634 cpu=17155.0s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1831s tests 254833333262 hits 3983903145 quick 3021279789 validate_cpu_s 25657.8
+  overlap-centre n=217832 cpu=0.3s | overlap-sphere n=375664225 cpu=680.0s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=455725712 cpu=7672.4s | q-proxy n=131015485 cpu=17305.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1730/1847 1837s
+watch 1841s tests 255381141187 hits 3986920575 quick 3021362679 validate_cpu_s 25811.5
+  overlap-centre n=217832 cpu=0.3s | overlap-sphere n=376034199 cpu=680.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=456480445 cpu=7682.8s | q-proxy n=132825318 cpu=17447.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1851s tests 255697650455 hits 3990875020 quick 3021601819 validate_cpu_s 25966.3
+  overlap-centre n=217870 cpu=0.3s | overlap-sphere n=377283546 cpu=682.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=457095233 cpu=7691.3s | q-proxy n=134676425 cpu=17592.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1861s tests 256233396140 hits 3997148263 quick 3023292324 validate_cpu_s 26119.2
+  overlap-centre n=218148 cpu=0.3s | overlap-sphere n=379853072 cpu=686.2s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=457255906 cpu=7694.7s | q-proxy n=136528691 cpu=17738.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1871s tests 256349092393 hits 3999760003 quick 3023379806 validate_cpu_s 26276.3
+  overlap-centre n=218148 cpu=0.3s | overlap-sphere n=380253892 cpu=686.8s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=457413664 cpu=7697.9s | q-proxy n=138494389 cpu=17891.3s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1881s tests 256534384182 hits 4002534443 quick 3023462945 validate_cpu_s 26432.7
+  overlap-centre n=218148 cpu=0.3s | overlap-sphere n=380615013 cpu=687.5s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=457797294 cpu=7704.2s | q-proxy n=140440933 cpu=18040.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1891s tests 256881370676 hits 4005440861 quick 3023511749 validate_cpu_s 26587.7
+  overlap-centre n=218148 cpu=0.3s | overlap-sphere n=380784960 cpu=687.8s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=458588965 cpu=7714.7s | q-proxy n=142336915 cpu=18184.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1901s tests 257594048647 hits 4008735698 quick 3023698239 validate_cpu_s 26740.8
+  overlap-centre n=218175 cpu=0.3s | overlap-sphere n=381463600 cpu=689.0s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=459085218 cpu=7721.4s | q-proxy n=144270347 cpu=18330.2s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1911s tests 257857583134 hits 4014701963 quick 3024880314 validate_cpu_s 26895.7
+  overlap-centre n=218252 cpu=0.3s | overlap-sphere n=384091582 cpu=692.8s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=459221550 cpu=7724.2s | q-proxy n=146290174 cpu=18478.4s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1750/1847 1915s
+seed 1680/1847 1918s
+watch 1921s tests 258052612575 hits 4018173036 quick 3025486114 validate_cpu_s 27052.1
+  overlap-centre n=218464 cpu=0.3s | overlap-sphere n=384728722 cpu=693.8s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=459379672 cpu=7727.4s | q-proxy n=148359934 cpu=18630.6s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1931s tests 258172080108 hits 4020808367 quick 3025563338 validate_cpu_s 27209.2
+  overlap-centre n=218464 cpu=0.3s | overlap-sphere n=385077429 cpu=694.5s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=459520429 cpu=7730.3s | q-proxy n=150428650 cpu=18784.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1670/1847 1938s
+watch 1941s tests 258831798313 hits 4023535463 quick 3025630610 validate_cpu_s 27362.4
+  overlap-centre n=218464 cpu=0.3s | overlap-sphere n=385361626 cpu=695.0s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=459926280 cpu=7737.0s | q-proxy n=152399354 cpu=18930.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1760/1847 1949s
+watch 1951s tests 259376546966 hits 4028102240 quick 3026117029 validate_cpu_s 27515.1
+  overlap-centre n=218640 cpu=0.3s | overlap-sphere n=386597801 cpu=696.8s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=461016104 cpu=7750.6s | q-proxy n=154152572 cpu=19067.3s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1740/1847 1952s
+watch 1961s tests 259764923613 hits 4034214226 quick 3027556403 validate_cpu_s 27668.6
+  overlap-centre n=218780 cpu=0.3s | overlap-sphere n=389203305 cpu=700.7s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=461139800 cpu=7753.3s | q-proxy n=156095811 cpu=19214.2s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1971s tests 260133092975 hits 4036886986 quick 3027637884 validate_cpu_s 27824.0
+  overlap-centre n=218780 cpu=0.3s | overlap-sphere n=389571986 cpu=701.3s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=461327877 cpu=7756.8s | q-proxy n=158130372 cpu=19365.5s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 1981s tests 260854277637 hits 4041464232 quick 3027884010 validate_cpu_s 27975.3
+  overlap-centre n=218818 cpu=0.3s | overlap-sphere n=390975660 cpu=703.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=462586469 cpu=7773.5s | q-proxy n=159799184 cpu=19497.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1770/1847 1982s
+watch 1991s tests 261369113359 hits 4047638958 quick 3029565835 validate_cpu_s 28127.9
+  overlap-centre n=219096 cpu=0.3s | overlap-sphere n=393455765 cpu=707.5s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=462777394 cpu=7777.3s | q-proxy n=161620747 cpu=19642.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2001s tests 262067035776 hits 4051304105 quick 3029679357 validate_cpu_s 28279.9
+  overlap-centre n=219110 cpu=0.3s | overlap-sphere n=394029296 cpu=708.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=463954844 cpu=7792.9s | q-proxy n=163421391 cpu=19778.3s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2011s tests 262471365966 hits 4057628251 quick 3030996267 validate_cpu_s 28432.8
+  overlap-centre n=219334 cpu=0.3s | overlap-sphere n=396926496 cpu=712.9s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=464297561 cpu=7798.4s | q-proxy n=165188525 cpu=19921.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2021s tests 263100712405 hits 4063129643 quick 3032915706 validate_cpu_s 28579.0
+  overlap-centre n=219412 cpu=0.3s | overlap-sphere n=397969275 cpu=714.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=465001447 cpu=7807.2s | q-proxy n=167023696 cpu=20056.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1790/1847 2022s
+watch 2031s tests 263715205531 hits 4068084527 quick 3034523323 validate_cpu_s 28724.8
+  overlap-centre n=219562 cpu=0.3s | overlap-sphere n=398208588 cpu=715.1s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=466523718 cpu=7825.7s | q-proxy n=168609226 cpu=20183.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1800/1847 2032s
+watch 2041s tests 264200946954 hits 4073465686 quick 3035146917 validate_cpu_s 28877.3
+  overlap-centre n=219862 cpu=0.3s | overlap-sphere n=398392022 cpu=715.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=469674730 cpu=7860.2s | q-proxy n=170032054 cpu=20301.4s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1810/1847 2051s
+watch 2051s tests 264725231624 hits 4080606348 quick 3037696279 validate_cpu_s 29023.3
+  overlap-centre n=220150 cpu=0.3s | overlap-sphere n=398566073 cpu=715.7s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=472689651 cpu=7892.9s | q-proxy n=171435325 cpu=20414.4s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2062s tests 265310998352 hits 4089459694 quick 3041654252 validate_cpu_s 29173.2
+  overlap-centre n=221809 cpu=0.3s | overlap-sphere n=398709618 cpu=716.1s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=476095188 cpu=7933.3s | q-proxy n=172778755 cpu=20523.5s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2072s tests 266008617034 hits 4099170551 quick 3046118167 validate_cpu_s 29322.1
+  overlap-centre n=223927 cpu=0.3s | overlap-sphere n=398864469 cpu=716.4s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=479843338 cpu=7973.3s | q-proxy n=174120635 cpu=20632.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1820/1847 2073s
+seed 1710/1847 2080s
+watch 2082s tests 267286498113 hits 4117958331 quick 3060125614 validate_cpu_s 29457.5
+  overlap-centre n=227989 cpu=0.3s | overlap-sphere n=399025057 cpu=716.6s | overlap n=43 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=483171999 cpu=8008.2s | q-proxy n=175407980 cpu=20732.4s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1830/1847 2086s
+seed 1840/1847 2088s
+watch 2092s tests 269326672532 hits 4139386387 quick 3077329000 validate_cpu_s 29563.0
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399183670 cpu=716.9s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=486009598 cpu=8039.6s | q-proxy n=176635888 cpu=20806.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2102s tests 269575846058 hits 4142373737 quick 3077428847 validate_cpu_s 29636.0
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399284941 cpu=717.0s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=487341677 cpu=8050.9s | q-proxy n=178090007 cpu=20867.8s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2112s tests 269638784106 hits 4143741453 quick 3077445785 validate_cpu_s 29684.4
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399346371 cpu=717.1s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=487394706 cpu=8051.6s | q-proxy n=179326333 cpu=20915.4s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2122s tests 269688680648 hits 4144877576 quick 3077458804 validate_cpu_s 29723.7
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399397852 cpu=717.2s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=487428720 cpu=8052.0s | q-proxy n=180363938 cpu=20954.2s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2132s tests 269749258483 hits 4146048625 quick 3077473918 validate_cpu_s 29762.8
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399452352 cpu=717.2s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=487476436 cpu=8052.6s | q-proxy n=181417684 cpu=20992.6s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2142s tests 269802122791 hits 4147213765 quick 3077489147 validate_cpu_s 29801.9
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399505056 cpu=717.3s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=487535217 cpu=8053.4s | q-proxy n=182456087 cpu=21030.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2152s tests 269832829043 hits 4147874132 quick 3077497206 validate_cpu_s 29822.4
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399534418 cpu=717.3s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=487555085 cpu=8053.6s | q-proxy n=183059164 cpu=21051.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2162s tests 269870137226 hits 4148529169 quick 3077506337 validate_cpu_s 29841.9
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399564021 cpu=717.4s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=487587246 cpu=8054.0s | q-proxy n=183643302 cpu=21070.2s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+watch 2172s tests 269895330940 hits 4149077579 quick 3077514276 validate_cpu_s 29858.1
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399588486 cpu=717.4s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=487627511 cpu=8054.5s | q-proxy n=184119044 cpu=21085.9s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+seed 1780/1847 2173s
+watch 2182s tests 269897887950 hits 4149123855 quick 3077514832 validate_cpu_s 29859.3
+  overlap-centre n=228139 cpu=0.3s | overlap-sphere n=399590558 cpu=717.4s | overlap n=44 cpu=0.0s | contact n=2 cpu=0.0s | q-prescreen n=487628888 cpu=8054.5s | q-proxy n=184161312 cpu=21087.1s | nonmanifold n=3 cpu=0.0s | pinch n=5 cpu=0.0s | disconnected n=2 cpu=0.0s
+sat 0 improper 0
+stage ms: group 121979 collide 5 mesh 9 AQ 3
+done 2181.6s tests 269897887950 hits 4149123855 unique 33 reasons {"q-prescreen": 487628888, "overlap-quick": 3077514832, "contact": 2, "overlap-centre": 228139, "overlap": 44, "pinch": 5, "disconnected": 2, "overlap-sphere": 399590558, "nonmanifold": 3, "valid": 70, "q-proxy": 184161312, "RAQT": 65}

@@ -1,0 +1,10 @@
+config depth=4 any=1 min-group=60 near=0 only=all seeds=all range=None nseeds=1847 max-radius=9 links=struts max-pieces=400
+through links [0, 0, 0, 2, 2, 2, 2, 0, 2, 0, 2]
+join: directions [0, 0, 0, 1181, 517, 276, 129, 0, 52, 0, 127] rotation classes [0, 0, 0, 9461, 5481, 2403, 422, 0, 289, 0, 1466] (through [0, 0, 0, 2, 2, 2, 2, 0, 2, 0, 2]) merged directions [0, 0, 0, 3617013, 1192805, 576461, 91813, 0, 58177, 0, 137181] (through [0, 0, 0, 1651, 681, 331, 157, 0, 49, 0, 121])
+solids 127 seeds 1847 (0 already done) threads 2 axtab [0, 0, 0, 2452, 1543, 813, 247, 0, 106, 0, 356] links [0, 0, 0, 34405, 36408, 20639, 697, 0, 530, 0, 9136]
+seeds done 10/1847 81s
+seeds done 20/1847 114s
+seeds done 30/1847 173s
+seeds done 40/1847 181s
+seeds done 50/1847 210s
+seeds done 60/1847 230s

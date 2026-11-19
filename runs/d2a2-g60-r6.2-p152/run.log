@@ -1,0 +1,46 @@
+config depth=2 any=2 min-group=60 near=0 only=all seeds=all range=None nseeds=1847 max-radius=6.2 max-pieces=152
+through links [0, 0, 0, 259, 384, 409, 43, 0, 26, 0, 196]
+join: directions [0, 0, 0, 1181, 517, 276, 129, 0, 52, 0, 127] rotation classes [0, 0, 0, 9461, 5481, 2403, 422, 0, 289, 0, 1466] (through [0, 0, 0, 17, 13, 27, 15, 0, 15, 0, 24]) merged directions [0, 0, 0, 3617013, 1192805, 576461, 91813, 0, 58177, 0, 137181] (through [0, 0, 0, 6889, 2041, 991, 3289, 0, 1345, 0, 641])
+solids 127 seeds 1847 (0 already done) threads 2 axtab [0, 0, 0, 2452, 1543, 813, 247, 0, 106, 0, 356] links [0, 0, 0, 34405, 36408, 20639, 697, 0, 530, 0, 9136]
+resuming: config depth=2 any=2 min-group=60 near=0 only=all seeds=all range=None nseeds=1847 max-radius=6.2 max-pieces=152
+through links [0, 0, 0, 259, 384, 409, 43, 0, 26, 0, 196]
+join: directions [0, 0, 0, 1181, 517, 276, 129, 0, 52, 0, 127] rotation classes [0, 0, 0, 9461, 5481, 2403, 422, 0, 289, 0, 1466] (through [0, 0, 0, 17, 13, 27, 15, 0, 15, 0, 24]) merged directions [0, 0, 0, 3617013, 1192805, 576461, 91813, 0, 58177, 0, 137181] (through [0, 0, 0, 6889, 2041, 991, 3289, 0, 1345, 0, 641])
+solids 127 seeds 1847 (7 already done) threads 2 axtab [0, 0, 0, 2452, 1543, 813, 247, 0, 106, 0, 356] links [0, 0, 0, 34405, 36408, 20639, 697, 0, 530, 0, 9136]
+seeds done 10/1847 708s
+seeds done 20/1847 2570s
+seeds done 30/1847 4181s
+seeds done 40/1847 5636s
+seeds done 50/1847 7535s
+seeds done 60/1847 8803s
+resuming: config depth=2 any=2 min-group=60 near=0 only=all seeds=all range=None nseeds=1847 max-radius=6.2 max-pieces=152
+through links [0, 0, 0, 259, 384, 409, 43, 0, 26, 0, 196]
+join: directions [0, 0, 0, 1181, 517, 276, 129, 0, 52, 0, 127] rotation classes [0, 0, 0, 9461, 5481, 2403, 422, 0, 289, 0, 1466] (through [0, 0, 0, 17, 13, 27, 15, 0, 15, 0, 24]) merged directions [0, 0, 0, 3617013, 1192805, 576461, 91813, 0, 58177, 0, 137181] (through [0, 0, 0, 6889, 2041, 991, 3289, 0, 1345, 0, 641])
+solids 127 seeds 1847 (68 already done) threads 2 axtab [0, 0, 0, 2452, 1543, 813, 247, 0, 106, 0, 356] links [0, 0, 0, 34405, 36408, 20639, 697, 0, 530, 0, 9136]
+seeds done 70/1847 745s
+seeds done 80/1847 3169s
+seeds done 90/1847 4717s
+seeds done 100/1847 6686s
+seeds done 110/1847 8584s
+seeds done 120/1847 10343s
+seeds done 130/1847 12996s
+seeds done 140/1847 15939s
+seeds done 150/1847 18305s
+seeds done 160/1847 20725s
+seeds done 170/1847 22413s
+seeds done 180/1847 22413s
+seeds done 190/1847 24146s
+seeds done 200/1847 26526s
+seeds done 210/1847 29573s
+seeds done 220/1847 31504s
+seeds done 230/1847 34152s
+seeds done 240/1847 36921s
+seeds done 250/1847 39063s
+seeds done 260/1847 41647s
+seeds done 270/1847 43795s
+seeds done 280/1847 46433s
+seeds done 290/1847 46433s
+seeds done 300/1847 46433s
+seeds done 310/1847 47662s
+seeds done 320/1847 50317s
+seeds done 330/1847 51875s
+seeds done 340/1847 53417s
