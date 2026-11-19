@@ -756,7 +756,8 @@ fn main() {
         id += 1;
     }
     // tables of the states and corners that occur in some window
-    let mut used = vec![false; g.states.len()];
+    let full = has("--full-tables");
+    let mut used: Vec<bool> = (0..g.states.len()).map(|i| full && net.cidx[i] != u32::MAX).collect();
     for (_, sh) in &shapes { if sh.walks > 0.0 { for o in &sh.options { for x in o { used[*x as usize] = true; } } } }
     drop(f);
     {

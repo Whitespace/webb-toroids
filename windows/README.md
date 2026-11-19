@@ -11,7 +11,7 @@ there. The aim is to start a toroid search from the hull: pick windows first, th
 | --- | --- | --- |
 | `open/` | fully open windows with 7 or more sides: nothing but rim edges lies in the plane | `windows --min-n 7 --no-faces-in-plane --out windows/open` |
 | `covered13-direct/` | 13 or more sides, solid faces allowed in the plane, neighbouring rim pieces glued directly | `windows --min-n 13 --no-via --out windows/covered13-direct` |
-| `covered13/` | the same with hidden corner pieces allowed (long run, see below) | `windows --min-n 13 --out windows/covered13` |
+| `covered13/` | the same with hidden corner pieces allowed (47 cpu-minutes) | `windows --min-n 13 --out windows/covered13` |
 
 Each directory holds
 
@@ -37,7 +37,8 @@ Each directory holds
 
 `mise run windows -- --min-n 12 --only a,b,c --out DIR` runs a search; flags: `--min-n`,
 `--max-n`, `--only`, `--max-faces`, `--solids FILE`, `--no-faces-in-plane`, `--no-via`,
-`--allow-coplanar`, `--threads`, `--example-budget`.
+`--allow-coplanar`, `--threads`, `--example-budget`, `--full-tables` (write every usable state
+and corner, not only those that occur in a window).
 
 ## Model
 
@@ -75,3 +76,11 @@ A window being in the library says nothing yet about a whole toroid existing aro
   of cubic type (turns 10.53, 19.47, 35.26, 54.74, 70.53 degrees: square cupolas, octahedra,
   augmented triangular prisms): 66 polygons with 14, 15, 16, 18 and 24 sides when neighbouring
   rim pieces are glued directly.
+- With hidden corner pieces allowed (`covered13/`): 325 polygons with 14, 15, 16, 18, 20, 21, 22
+  and 24 sides, again all with solid faces in the plane; 310 have a checked example rim. The 15
+  without one include regular 16- and 20-gons and other 18 and 22.5 degree polygons, the only
+  ones that list pentagonal solids; treat those as unconfirmed.
+- Stretching Webb's 12-gon to 14 sides (`scripts/bridge_chains.py`): the antiprism end of the
+  rotunda arc accepts only a pentagonal prism (turn 31.72) or an icosahedron fragment (63.43).
+  A 14-gon needs four pieces between the two antiprisms turning 126.87 degrees in total; of the
+  20955 four-piece chains that fit, the flattest turns 180.
