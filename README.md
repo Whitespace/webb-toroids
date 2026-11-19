@@ -71,6 +71,11 @@ Directly:
 | `--combine DIR` | no search: union pairs of chains from `DIR/partials.tsv` that share seed, group and centre, validate each, write `DIR/combined/` (`--max-pairs N` skips placements with more pairs, default 2,000,000) | |
 | `--partial-keys FILE` | with `--partials`: write only placements listed in FILE (lines of seed index, axis index and the three key numbers, i.e. the first five columns of `partials.tsv`) | all |
 | `--base-raqt`, `--rounds N`, `--beam K` | with `--combine`: grow toroids instead of pairing everything. Start from each chain that is a toroid by itself, add one chain orbit per round, keep the K unions of highest genus; a union is recorded when it has more holes than what it grew from or a different convex hull | off, 1, 8 |
+| `--third L` | with `--combine` (pair mode): two chains from one seed give up to three kinds of node but only two kinds of strut. For every pair whose union is free of collisions, also run straight struts of up to L prisms and antiprisms out of every face of every piece and validate each | 0 (off) |
+| `--frames` | also record toroids that pass the hull screens (every hull edge has unit length) but miss some hull edge; the screens stay on, unlike `--near` | off |
+| `--decorate FILE --id N` | no search: grow result N of a `results.jsonl` outward. Level 1 puts every solid on every face of every representative piece and takes its orbit under the result's own group; each further level (up to `--depth`) adds another such decoration or a solid on a piece added before. Records only (R)(A)(Q)(T) toroids whose hull differs from the base's and from `--new-hulls`. A decoration need not end on an axis, so this reaches shapes the chain search cannot. Depth 2 on Webb's toroid takes 30 s on 4 cores; `--only` and `--max-faces` limit the solids added | |
+| `--outward` | with `--decorate`: every added piece must reach beyond the inscribed sphere of the base hull (needed to make depth 3 affordable) | off |
+| `--dec-beam K` | with `--decorate`: beam search instead of everything. Only decorations that reach beyond the old hull; the K states of a level with the smallest share of non-toroid hull edges are extended. Heuristic | 0 (off) |
 | `--out DIR` | output directory | `out` |
 
 Output: `results.tsv` (one row per distinct toroid), `results.jsonl` (representative pieces and
