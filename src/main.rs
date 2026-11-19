@@ -265,6 +265,8 @@ struct Shared {
     ckpt: std::fs::File,
     /// `--partials`: every collision-free hit, for `--combine`
     part: Option<std::fs::File>,
+    /// `--partial-keys`: only placements listed here are written (seed, axis, key), matched within one unit of rounding
+    pkeys: Option<HashSet<[i64; 5]>>,
     n: usize,
     reasons: std::collections::HashMap<&'static str, u64>,
 }
@@ -587,6 +589,21 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                 let ns = t0.elapsed().as_nanos() as u64;
                 ctx.st.val_ns += ns;
                 if let Err(r) = &res { let k = RNAMES.iter().position(|x| x == r).unwrap_or(11); ctx.st.r[k] += 1; ctx.st.rns[k] += ns; }
+                // with a key list, a placement counts if it is listed, and is written under the listed key
+                let pkey = match (pkey, ctx.partials) {
+                    (Some(k), true) => {
+                        let sh = ctx.shared.lock().unwrap();
+                        match &sh.pkeys {
+                            None => Some(k),
+                            Some(set) => {
+                                let mut hit = None;
+                                for d1 in -1..=1i64 { for d2 in -1..=1i64 { let q = [ctx.a as i64, ctx.ai as i64, k[0], k[1] + d1, k[2] + d2]; if set.contains(&q) { hit = Some([k[0], k[1] + d1, k[2] + d2]); } } }
+                                hit
+                            }
+                        }
+                    }
+                    _ => None,
+                };
                 if let (true, Some(k)) = (ctx.partials, pkey) {
                     // free of collisions, toroid or not: material for a second chain orbit
                     let cls = match &res { Ok(r) => if r.a_viol == 0 && r.q_ok { "raqt" } else { "valid" }, Err(e) if ["face3", "nonmanifold", "pinch", "disconnected", "euler", "genus0"].contains(e) => *e, _ => "" };
@@ -827,6 +844,9 @@ fn main() {
     let mut use_share = true;
     let mut partials = false;
     let mut new_hulls: Option<String> = None;
+    let mut partial_keys: Option<String> = None;
+    let mut base_raqt = false;
+    let (mut rounds, mut beam) = (1usize, 8usize);
     let mut combine_dir: Option<String> = None;
     let mut maxpairs = 2_000_000usize;
     let mut i = 1;
@@ -843,6 +863,10 @@ fn main() {
             "--no-join" => { use_join = false; }
             "--no-share" => { use_share = false; }
             "--partials" => { partials = true; }
+            "--partial-keys" => { partial_keys = Some(args[i + 1].clone()); i += 1; }
+            "--base-raqt" => { base_raqt = true; }
+            "--rounds" => { rounds = args[i + 1].parse().unwrap(); i += 1; }
+            "--beam" => { beam = args[i + 1].parse().unwrap(); i += 1; }
             "--new-hulls" => { new_hulls = Some(args[i + 1].clone()); i += 1; }
             "--combine" => { combine_dir = Some(args[i + 1].clone()); i += 1; }
             "--max-pairs" => { maxpairs = args[i + 1].parse().unwrap(); i += 1; }
@@ -858,7 +882,7 @@ fn main() {
         i += 1;
     }
     let lib = solids::load(&solids_path);
-    if let Some(dir) = &combine_dir { combine::combine(&lib, dir, maxpieces, threads, maxpairs); return; }
+    if let Some(dir) = &combine_dir { combine::combine(&lib, dir, maxpieces, threads, maxpairs, base_raqt, rounds, beam); return; }
     let active: Vec<bool> = lib.iter().map(|s| only.as_ref().map_or(true, |o| o.contains(&s.name)) && s.faces.len() <= maxfaces).collect();
     // --links: which solids may be links. "struts" makes the free links prisms and antiprisms
     // (cube and octahedron included) passed base to base, i.e. the straight struts of a
@@ -925,8 +949,9 @@ fn main() {
     let todo: Vec<usize> = (0..seeds.len()).filter(|i| !done[*i]).collect();
     let nfin = AtomicUsize::new(seeds.len() - todo.len());
     let hulls: Option<HashSet<String>> = new_hulls.as_ref().map(|f| std::fs::read_to_string(f).unwrap_or_else(|e| panic!("--new-hulls {}: {}", f, e)).lines().map(|l| l.to_string()).collect());
+    let pkeys: Option<HashSet<[i64; 5]>> = partial_keys.as_ref().map(|f| std::fs::read_to_string(f).unwrap().lines().filter_map(|l| { let v: Vec<i64> = l.split_whitespace().filter_map(|x| x.parse().ok()).collect(); if v.len() == 5 { Some([v[0], v[1], v[2], v[3], v[4]]) } else { None } }).collect());
     let part = if partials { Some(std::fs::OpenOptions::new().create(true).append(true).open(format!("{}/partials.tsv", outdir)).unwrap()) } else { None };
-    let shared = Mutex::new(Shared { seen, hulls, tsv, jsonl, ckpt, part, n: nres, reasons: Default::default() });
+    let shared = Mutex::new(Shared { seen, hulls, tsv, jsonl, ckpt, part, pkeys, n: nres, reasons: Default::default() });
     say(format!("{}{}", if resuming { "resuming: " } else { "" }, config));
     say(format!("through links {:?}", tab.thru.iter().map(|v| v.len()).collect::<Vec<_>>()));
     if use_join { say(format!("join: directions {:?} rotation classes {:?} (through {:?}) merged directions {:?} (through {:?})", tab.ud.iter().map(|v| v.n).collect::<Vec<_>>(),

@@ -29,7 +29,9 @@ fn pkey(s: usize, c: V3) -> (usize, [i64; 3]) { (s, [(c[0] * 1e4).round() as i64
 
 struct Out { seen: HashSet<String>, tsv: std::fs::File, jsonl: std::fs::File, n: usize, reasons: HashMap<&'static str, u64> }
 
-pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpairs: usize) {
+/// `base_raqt`: only unions in which at least one chain is a toroid by itself (growing a known one).
+/// `rounds`, `beam`: how many chain orbits to add in turn, and how many unions survive each round.
+pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpairs: usize, base_raqt: bool, rounds: usize, beam: usize) {
     let text = std::fs::read_to_string(format!("{}/partials.tsv", dir)).expect("no partials.tsv in that run; search with --partials first");
     let mut buckets: HashMap<(usize, usize, i64, i64, i64), Vec<Part>> = HashMap::new();
     let mut lines: HashSet<&str> = HashSet::new();
@@ -82,40 +84,91 @@ pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpa
                         keep.push(i);
                         sets.push(v.into_iter().collect());
                     }
-                    let np = keep.len() * keep.len().saturating_sub(1) / 2;
-                    if np > maxpairs { *reasons.entry("placement-skipped").or_insert(0) += 1; *reasons.entry("pairs-skipped").or_insert(0) += np as u64; continue; }
                     scratch.grp.clear();
                     scratch.grp.extend_from_slice(&grp);
+                    // validate a union and, if it is a toroid, record it; returns (genus, hull key)
+                    let mut try_union = |reps: &[(usize, Xf)], chain: &str, reasons: &mut HashMap<&'static str, u64>, record: &dyn Fn(i64, &str) -> bool| -> Option<(i64, String)> {
+                        match validate::validate(lib, reps, b[0].centre, true, &mut scratch) {
+                            Err(e) => { *reasons.entry(e).or_insert(0) += 1; None }
+                            Ok(r) => {
+                                *reasons.entry("valid").or_insert(0) += 1;
+                                if !(r.a_viol == 0 && r.q_ok) { return None; }
+                                *reasons.entry("RAQT").or_insert(0) += 1;
+                                let hf: Vec<String> = r.hull_faces.iter().map(|n| n.to_string()).collect();
+                                let hull = format!("{}\t{:.4}\t{:.4}\t{}", r.gorder, r.rcirc, r.rin, hf.join(","));
+                                if !record(r.genus, &hull) { return Some((r.genus, hull)); }
+                                let names: Vec<String> = r.counts.iter().map(|(s, c)| format!("{}x{}", c, lib[*s].name)).collect();
+                                let (mut m1, mut m3) = (0.0, 0.0);
+                                for p in &r.pts { let d = dist(*p, b[0].centre); m1 += d; m3 += d * d * d; }
+                                let sig = format!("{} {} {} {} {} {:.4} {:.3} {:.2} {}", r.gorder, r.genus, r.nv, r.ne, r.nf, r.rcirc, m1, m3, names.join("+"));
+                                let mut sh = shared.lock().unwrap();
+                                if !sh.seen.insert(sig) { return Some((r.genus, hull)); }
+                                let id = sh.n;
+                                sh.n += 1;
+                                writeln!(sh.tsv, "{}\tRAQT\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\t{}\t{}\t{}\t{}",
+                                    id, r.gorder, r.genus, r.npieces, r.a_viol, r.q_missing, r.q_edges, if r.hull_regular { "regular" } else { "irregular" }, r.rin, r.rcirc,
+                                    if r.rin < 1e9 { r.rin / r.rcirc } else { 0.0 }, hf.join(","), r.nv, r.ne, r.nf, names.join("+"), chain).unwrap();
+                                let rj: Vec<String> = reps.iter().map(|(s, x)| format!("{{\"solid\":\"{}\",\"xf\":{}}}", lib[*s].name, crate::xf_json(x))).collect();
+                                let gj: Vec<String> = b[0].gens.iter().map(crate::xf_json).collect();
+                                writeln!(sh.jsonl, "{{\"id\":{},\"good\":true,\"group\":{},\"genus\":{},\"centre\":[{:.15e},{:.15e},{:.15e}],\"reps\":[{}],\"gens\":[{}]}}",
+                                    id, r.gorder, r.genus, b[0].centre[0], b[0].centre[1], b[0].centre[2], rj.join(","), gj.join(",")).unwrap();
+                                crate::write_off(&format!("{}/off/{:06}.off", out, id), &r, lib);
+                                Some((r.genus, hull))
+                            }
+                        }
+                    };
+                    if base_raqt {
+                        // Grow a toroid: start from each chain that is a toroid by itself, add one more
+                        // chain orbit per round, keep the `beam` unions of highest genus, repeat.
+                        // A union is recorded when it has more holes than what it grew from, or a
+                        // different convex hull.
+                        struct St { mem: Vec<usize>, reps: Vec<(usize, Xf)>, set: HashSet<(usize, [i64; 3])>, genus: i64, hull: String }
+                        let mut beam_v: Vec<St> = Vec::new();
+                        for (a, &i) in keep.iter().enumerate() {
+                            if b[i].cls != "raqt" { continue; }
+                            if let Some((genus, hull)) = try_union(&b[i].reps, "", &mut reasons, &|_, _| false) {
+                                beam_v.push(St { mem: vec![a], reps: b[i].reps.clone(), set: sets[a].clone(), genus, hull });
+                            }
+                        }
+                        let mut visited: HashSet<Vec<usize>> = HashSet::new();
+                        for round in 0..rounds {
+                            let mut nextv: Vec<St> = Vec::new();
+                            for st in &beam_v {
+                                for c in 0..keep.len() {
+                                    if st.mem.contains(&c) || sets[c].is_subset(&st.set) { continue; }
+                                    let mut mem = st.mem.clone();
+                                    mem.push(c);
+                                    mem.sort();
+                                    if !visited.insert(mem.clone()) { continue; }
+                                    let mut reps = st.reps.clone();
+                                    for (s, x) in &b[keep[c]].reps[1..] { if !st.set.contains(&pkey(*s, x.t)) { reps.push((*s, *x)); } }
+                                    if reps.len() >= 64 { continue; }
+                                    let chain = mem.iter().map(|&m| b[keep[m]].desc.as_str()).collect::<Vec<_>>().join(" || ");
+                                    let (g0, h0) = (st.genus, st.hull.clone());
+                                    if let Some((genus, hull)) = try_union(&reps, &chain, &mut reasons, &|g, h| g > g0 || h != h0) {
+                                        let mut set = st.set.clone();
+                                        set.extend(sets[c].iter().cloned());
+                                        nextv.push(St { mem, reps, set, genus, hull });
+                                    }
+                                }
+                            }
+                            if nextv.is_empty() { break; }
+                            nextv.sort_by(|x, y| y.genus.cmp(&x.genus).then(x.reps.len().cmp(&y.reps.len())));
+                            nextv.truncate(beam);
+                            eprintln!("placement {} round {} unions kept {} best genus {} ({} chain orbits) hull {}", bi, round + 1, nextv.len(), nextv[0].genus, nextv[0].mem.len(), nextv[0].hull.replace('\t', " "));
+                            beam_v = nextv;
+                        }
+                        continue;
+                    }
+                    let np = keep.len() * keep.len().saturating_sub(1) / 2;
+                    if np > maxpairs { *reasons.entry("placement-skipped").or_insert(0) += 1; *reasons.entry("pairs-skipped").or_insert(0) += np as u64; continue; }
                     for a in 0..keep.len() { for c in a + 1..keep.len() {
                         let (pa, pc) = (&b[keep[a]], &b[keep[c]]);
                         if sets[c].is_subset(&sets[a]) || sets[a].is_subset(&sets[c]) { *reasons.entry("nested").or_insert(0) += 1; continue; }
                         let mut reps = pa.reps.clone();
                         for (s, x) in &pc.reps[1..] { if !sets[a].contains(&pkey(*s, x.t)) { reps.push((*s, *x)); } }
-                        match validate::validate(lib, &reps, pa.centre, true, &mut scratch) {
-                            Err(e) => { *reasons.entry(e).or_insert(0) += 1; }
-                            Ok(r) => {
-                                *reasons.entry("valid").or_insert(0) += 1;
-                                if !(r.a_viol == 0 && r.q_ok) { continue; }
-                                *reasons.entry("RAQT").or_insert(0) += 1;
-                                let names: Vec<String> = r.counts.iter().map(|(s, c)| format!("{}x{}", c, lib[*s].name)).collect();
-                                let (mut m1, mut m3) = (0.0, 0.0);
-                                for p in &r.pts { let d = dist(*p, pa.centre); m1 += d; m3 += d * d * d; }
-                                let sig = format!("{} {} {} {} {} {:.4} {:.3} {:.2} {}", r.gorder, r.genus, r.nv, r.ne, r.nf, r.rcirc, m1, m3, names.join("+"));
-                                let mut sh = shared.lock().unwrap();
-                                if !sh.seen.insert(sig) { continue; }
-                                let id = sh.n;
-                                sh.n += 1;
-                                let hf: Vec<String> = r.hull_faces.iter().map(|n| n.to_string()).collect();
-                                writeln!(sh.tsv, "{}\tRAQT\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\t{}\t{}\t{}\t{} [{}] || {} [{}]",
-                                    id, r.gorder, r.genus, r.npieces, r.a_viol, r.q_missing, r.q_edges, if r.hull_regular { "regular" } else { "irregular" }, r.rin, r.rcirc,
-                                    if r.rin < 1e9 { r.rin / r.rcirc } else { 0.0 }, hf.join(","), r.nv, r.ne, r.nf, names.join("+"), pa.desc, pa.cls, pc.desc, pc.cls).unwrap();
-                                let rj: Vec<String> = reps.iter().map(|(s, x)| format!("{{\"solid\":\"{}\",\"xf\":{}}}", lib[*s].name, crate::xf_json(x))).collect();
-                                let gj: Vec<String> = pa.gens.iter().map(crate::xf_json).collect();
-                                writeln!(sh.jsonl, "{{\"id\":{},\"good\":true,\"group\":{},\"genus\":{},\"centre\":[{:.15e},{:.15e},{:.15e}],\"reps\":[{}],\"gens\":[{}]}}",
-                                    id, r.gorder, r.genus, pa.centre[0], pa.centre[1], pa.centre[2], rj.join(","), gj.join(",")).unwrap();
-                                crate::write_off(&format!("{}/off/{:06}.off", out, id), &r, lib);
-                            }
-                        }
+                        let chain = format!("{} [{}] || {} [{}]", pa.desc, pa.cls, pc.desc, pc.cls);
+                        try_union(&reps, &chain, &mut reasons, &|_, _| true);
                     } }
                 }
                 let mut sh = shared.lock().unwrap();

@@ -69,6 +69,8 @@ Directly:
 | `--new-hulls FILE` | record one toroid per convex hull, and none on a hull listed in FILE (lines of group, circumradius, inradius, hull face sizes, as `scripts/known_hulls.py` prints them from `runs/`); the rest are counted as `known-hull`. `mise run search` and the queue worker pass this by default, `mise run search ... --all-fillings` turns it off | off |
 | `--partials` | also write every collision-free hit, toroid or not, to `partials.tsv` (turns the hull screens off, so slower; large file) | off |
 | `--combine DIR` | no search: union pairs of chains from `DIR/partials.tsv` that share seed, group and centre, validate each, write `DIR/combined/` (`--max-pairs N` skips placements with more pairs, default 2,000,000) | |
+| `--partial-keys FILE` | with `--partials`: write only placements listed in FILE (lines of seed index, axis index and the three key numbers, i.e. the first five columns of `partials.tsv`) | all |
+| `--base-raqt`, `--rounds N`, `--beam K` | with `--combine`: grow toroids instead of pairing everything. Start from each chain that is a toroid by itself, add one chain orbit per round, keep the K unions of highest genus; a union is recorded when it has more holes than what it grew from or a different convex hull | off, 1, 8 |
 | `--out DIR` | output directory | `out` |
 
 Output: `results.tsv` (one row per distinct toroid), `results.jsonl` (representative pieces and
