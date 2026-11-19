@@ -839,6 +839,7 @@ fn main() {
     let mut frames = false;
     let (mut decorate_file, mut decorate_id): (Option<String>, usize) = (None, 0);
     let mut beam_dec = 0usize;
+    let mut third = 0usize;
     let mut range: Option<(usize, usize)> = None;
     let mut outdir = "out".to_string();
     let mut only: Option<Vec<String>> = None;
@@ -879,6 +880,7 @@ fn main() {
             "--decorate" => { decorate_file = Some(args[i + 1].clone()); i += 1; }
             "--id" => { decorate_id = args[i + 1].parse().unwrap(); i += 1; }
             "--dec-beam" => { beam_dec = args[i + 1].parse().unwrap(); i += 1; }
+            "--third" => { third = args[i + 1].parse().unwrap(); i += 1; }
             "--max-pairs" => { maxpairs = args[i + 1].parse().unwrap(); i += 1; }
             "--max-radius" => { maxrad = args[i + 1].parse().unwrap(); i += 1; }
             "--max-faces" => { maxfaces = args[i + 1].parse().unwrap(); i += 1; }
@@ -893,7 +895,7 @@ fn main() {
     }
     let lib = solids::load(&solids_path);
     if let Some(dir) = &combine_dir { let hulls: Option<HashSet<String>> = new_hulls.as_ref().map(|f| std::fs::read_to_string(f).unwrap().lines().map(|l| l.to_string()).collect());
-        combine::combine(&lib, dir, maxpieces, threads, maxpairs, base_raqt, rounds, beam, hulls); return; }
+        combine::combine(&lib, dir, maxpieces, threads, maxpairs, base_raqt, rounds, beam, hulls, third); return; }
     let active: Vec<bool> = lib.iter().map(|s| only.as_ref().map_or(true, |o| o.contains(&s.name)) && s.faces.len() <= maxfaces).collect();
     if let Some(f) = &decorate_file { let hulls: Option<HashSet<String>> = new_hulls.as_ref().map(|f| std::fs::read_to_string(f).unwrap().lines().map(|l| l.to_string()).collect());
         decorate::decorate(&lib, &active, f, decorate_id, depth, maxpieces, threads, hulls, &outdir, maxrad, beam_dec); return; }

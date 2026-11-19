@@ -14,6 +14,8 @@ use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
+const FLIP: M3 = [[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]];
+
 struct Part { cls: String, centre: V3, gens: [Xf; 2], reps: Vec<(usize, Xf)>, desc: String }
 
 fn xf_of(v: &[f64]) -> Xf { Xf { r: [[v[0], v[1], v[2]], [v[3], v[4], v[5]], [v[6], v[7], v[8]]], t: [v[9], v[10], v[11]] } }
@@ -31,7 +33,7 @@ struct Out { hulls: Option<HashSet<String>>, seen: HashSet<String>, tsv: std::fs
 
 /// `base_raqt`: only unions in which at least one chain is a toroid by itself (growing a known one).
 /// `rounds`, `beam`: how many chain orbits to add in turn, and how many unions survive each round.
-pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpairs: usize, base_raqt: bool, rounds: usize, beam: usize, hulls: Option<HashSet<String>>) {
+pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpairs: usize, base_raqt: bool, rounds: usize, beam: usize, hulls: Option<HashSet<String>>, third: usize) {
     let text = std::fs::read_to_string(format!("{}/partials.tsv", dir)).expect("no partials.tsv in that run; search with --partials first");
     let mut buckets: HashMap<(usize, usize, i64, i64, i64), Vec<Part>> = HashMap::new();
     let mut lines: HashSet<&str> = HashSet::new();
@@ -87,22 +89,22 @@ pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpa
                     scratch.grp.clear();
                     scratch.grp.extend_from_slice(&grp);
                     // validate a union and, if it is a toroid, record it; returns (genus, hull key)
-                    let mut try_union = |reps: &[(usize, Xf)], chain: &str, reasons: &mut HashMap<&'static str, u64>, record: &dyn Fn(i64, &str) -> bool| -> Option<(i64, String)> {
-                        match validate::validate(lib, reps, b[0].centre, true, &mut scratch) {
-                            Err(e) => { *reasons.entry(e).or_insert(0) += 1; None }
+                    let mut try_full = |reps: &[(usize, Xf)], chain: &str, screen: bool, reasons: &mut HashMap<&'static str, u64>, record: &dyn Fn(i64, &str) -> bool| -> Result<Option<(i64, String)>, &'static str> {
+                        match validate::validate(lib, reps, b[0].centre, screen, &mut scratch) {
+                            Err(e) => { *reasons.entry(e).or_insert(0) += 1; Err(e) }
                             Ok(r) => {
                                 *reasons.entry("valid").or_insert(0) += 1;
-                                if !(r.a_viol == 0 && r.q_ok) { return None; }
+                                if !(r.a_viol == 0 && r.q_ok) { return Ok(None); }
                                 *reasons.entry("RAQT").or_insert(0) += 1;
                                 let hf: Vec<String> = r.hull_faces.iter().map(|n| n.to_string()).collect();
                                 let hull = format!("{}\t{:.4}\t{:.4}\t{}", r.gorder, r.rcirc, r.rin, hf.join(","));
-                                if !record(r.genus, &hull) { return Some((r.genus, hull)); }
+                                if !record(r.genus, &hull) { return Ok(Some((r.genus, hull))); }
                                 let names: Vec<String> = r.counts.iter().map(|(s, c)| format!("{}x{}", c, lib[*s].name)).collect();
                                 let (mut m1, mut m3) = (0.0, 0.0);
                                 for p in &r.pts { let d = dist(*p, b[0].centre); m1 += d; m3 += d * d * d; }
                                 let sig = format!("{} {} {} {} {} {:.4} {:.3} {:.2} {}", r.gorder, r.genus, r.nv, r.ne, r.nf, r.rcirc, m1, m3, names.join("+"));
                                 let mut sh = shared.lock().unwrap();
-                                if !sh.seen.insert(sig) { return Some((r.genus, hull)); }
+                                if !sh.seen.insert(sig) { return Ok(Some((r.genus, hull))); }
                                 let id = sh.n;
                                 sh.n += 1;
                                 writeln!(sh.tsv, "{}\tRAQT\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\t{}\t{}\t{}\t{}",
@@ -113,10 +115,11 @@ pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpa
                                 writeln!(sh.jsonl, "{{\"id\":{},\"good\":true,\"group\":{},\"genus\":{},\"centre\":[{:.15e},{:.15e},{:.15e}],\"reps\":[{}],\"gens\":[{}]}}",
                                     id, r.gorder, r.genus, b[0].centre[0], b[0].centre[1], b[0].centre[2], rj.join(","), gj.join(",")).unwrap();
                                 crate::write_off(&format!("{}/off/{:06}.off", out, id), &r, lib);
-                                Some((r.genus, hull))
+                                Ok(Some((r.genus, hull)))
                             }
                         }
                     };
+                    macro_rules! try_union { ($reps:expr, $chain:expr, $reasons:expr, $record:expr) => { try_full($reps, $chain, true, $reasons, $record).ok().flatten() } }
                     if base_raqt {
                         // Grow a toroid: start from each chain that is a toroid by itself, add one more
                         // chain orbit per round, keep the `beam` unions of highest genus, repeat.
@@ -126,7 +129,7 @@ pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpa
                         let mut beam_v: Vec<St> = Vec::new();
                         for (a, &i) in keep.iter().enumerate() {
                             if b[i].cls != "raqt" { continue; }
-                            if let Some((genus, hull)) = try_union(&b[i].reps, "", &mut reasons, &|_, _| false) {
+                            if let Some((genus, hull)) = try_union!(&b[i].reps, "", &mut reasons, &|_, _| false) {
                                 beam_v.push(St { mem: vec![a], reps: b[i].reps.clone(), set: sets[a].clone(), genus, hull });
                             }
                         }
@@ -145,7 +148,7 @@ pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpa
                                     if reps.len() >= 64 { continue; }
                                     let chain = mem.iter().map(|&m| b[keep[m]].desc.as_str()).collect::<Vec<_>>().join(" || ");
                                     let (g0, h0) = (st.genus, st.hull.clone());
-                                    if let Some((genus, hull)) = try_union(&reps, &chain, &mut reasons, &|g, h| g > g0 || h != h0) {
+                                    if let Some((genus, hull)) = try_union!(&reps, &chain, &mut reasons, &|g, h| g > g0 || h != h0) {
                                         let mut set = st.set.clone();
                                         set.extend(sets[c].iter().cloned());
                                         nextv.push(St { mem, reps, set, genus, hull });
@@ -168,7 +171,36 @@ pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpa
                         let mut reps = pa.reps.clone();
                         for (s, x) in &pc.reps[1..] { if !sets[a].contains(&pkey(*s, x.t)) { reps.push((*s, *x)); } }
                         let chain = format!("{} [{}] || {} [{}]", pa.desc, pa.cls, pc.desc, pc.cls);
-                        try_union(&reps, &chain, &mut reasons, &|_, h| shared.lock().unwrap().hulls.as_mut().map_or(true, |k| k.insert(h.to_string())));
+                        let new_hull = |_: i64, h: &str| shared.lock().unwrap().hulls.as_mut().map_or(true, |k| k.insert(h.to_string()));
+                        if third == 0 { try_union!(&reps, &chain, &mut reasons, &new_hull); continue; }
+                        // Third strut orbit: the two chains give up to three kinds of node but only two
+                        // kinds of strut. If their union is free of collisions, run straight struts of
+                        // up to `third` prisms and antiprisms out of every face of every piece.
+                        match try_union!(&reps, &chain, &mut reasons, &new_hull) { Some(_) => continue, None => {} }
+                        if try_full(&reps, &chain, false, &mut reasons, &|_, _| false).is_err() { continue; }
+                        *reasons.entry("third-bases").or_insert(0) += 1;
+                        let nb = reps.len();
+                        // stack of (pieces added, exit frame of the last one, its polygon)
+                        let mut stack: Vec<(Vec<(usize, Xf)>, Xf, usize)> = Vec::new();
+                        for (s, x) in &reps[..nb] { for h in 0..lib[*s].faces.len() { stack.push((Vec::new(), x.mul(&lib[*s].frames[h][0]), lib[*s].faces[h].len())); } }
+                        while let Some((added, w, n)) = stack.pop() {
+                            for (ti, ts) in lib.iter().enumerate() {
+                                if ts.v.len() != 2 * n { continue; }
+                                for &(g, k) in &ts.flags {
+                                    if ts.faces[g].len() != n { continue; }
+                                    let h = match (0..ts.faces.len()).find(|&h| h != g && ts.faces[h].len() == n && dot(ts.fnorm[h], ts.fnorm[g]) < -1.0 + 1e-9) { Some(h) => h, None => continue };
+                                    let fi = ts.frames[g][k].inv();
+                                    let x = w.mul(&Xf { r: mmul(&FLIP, &fi.r), t: mv(&FLIP, fi.t) });
+                                    let mut a2 = added.clone();
+                                    a2.push((ti, x));
+                                    let mut r2 = reps.clone();
+                                    r2.extend(a2.iter().cloned());
+                                    let c2 = format!("{} || third: {}", chain, a2.iter().map(|(s, _)| lib[*s].name.as_str()).collect::<Vec<_>>().join(" > "));
+                                    try_union!(&r2, &c2, &mut reasons, &new_hull);
+                                    if a2.len() < third { stack.push((a2, x.mul(&ts.frames[h][0]), n)); }
+                                }
+                            }
+                        }
                     } }
                 }
                 let mut sh = shared.lock().unwrap();
