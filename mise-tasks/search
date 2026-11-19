@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #MISE description="Resumable search: mise run search [DEPTH] [ANY] [extra flags] [--push]. Output goes to runs/d<DEPTH>a<ANY>."
 #MISE depends=["build"]
+# Only toroids on a convex hull that no run under runs/ has found yet are recorded; --all-fillings
+# records every distinct toroid as before.
 # Re-running the same command continues from the checkpoint in the output directory.
 # Extra flags are passed through, e.g.: mise run search 3 0 --min-group 60
 # --push (or SEARCH_PUSH=1): when the run completes, commit its directory and push it.
@@ -8,11 +10,13 @@
 set -euo pipefail
 push="${SEARCH_PUSH:-0}"
 commit=0
+fillings=0
 args=()
 for a in "$@"; do
   case "$a" in
     --push) push=1 ;;
     --commit) commit=1 ;;
+    --all-fillings) fillings=1 ;;
     *) args+=("$a") ;;
   esac
 done
@@ -23,7 +27,13 @@ any="${2:-0}"
 if [ "$#" -ge 2 ]; then shift 2; else shift "$#"; fi
 out="runs/${name}"
 echo "output: ${out}  (log: ${out}/run.log)" >&2
-WATCH=1 target/release/webb-toroids --depth "$depth" --any "$any" --out "$out" --resume "$@"
+hulls=()
+if [ "$fillings" = 0 ]; then
+  mkdir -p queue/state
+  python3 scripts/known_hulls.py runs > queue/state/hulls.txt
+  hulls=(--new-hulls queue/state/hulls.txt)
+fi
+WATCH=1 target/release/webb-toroids --depth "$depth" --any "$any" --out "$out" --resume ${hulls[@]+"${hulls[@]}"} "$@"
 # only a run that reached its "done" line is committed; an interrupted one is left for the next resume
 if [ "$push" = 1 ] || [ "$commit" = 1 ]; then
   if grep -q '^done ' "$out/run.log"; then

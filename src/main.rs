@@ -257,6 +257,9 @@ fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -
 
 struct Shared {
     seen: HashSet<String>,
+    /// `--new-hulls`: the convex hulls already known (group, circumradius, inradius, hull face sizes,
+    /// as results.tsv prints them); a toroid on one of them is counted but not recorded
+    hulls: Option<HashSet<String>>,
     tsv: std::fs::File,
     jsonl: std::fs::File,
     ckpt: std::fs::File,
@@ -410,10 +413,15 @@ fn record(ctx: &mut Ctx, reps: &[(usize, Xf)], gens: &[Xf], centre: V3, res: Res
     for p in &r.pts { let d = dist(*p, centre); m1 += d; m3 += d * d * d; }
     let sig = format!("{} {} {} {} {} {} {} {:.4} {:.3} {:.2} {}", r.gorder, r.genus, r.nv, r.ne, r.nf, r.a_viol, r.q_missing, r.rcirc, m1, m3, names.join("+"));
     if !sh.seen.insert(sig.clone()) { return; }
+    let hf: Vec<String> = r.hull_faces.iter().map(|n| n.to_string()).collect();
+    if good {
+        // one toroid per convex hull: the first, and none on a hull that is already known
+        let hull = format!("{}\t{:.4}\t{:.4}\t{}", r.gorder, r.rcirc, r.rin, hf.join(","));
+        if let Some(h) = sh.hulls.as_mut() { if !h.insert(hull) { *ctx.reasons.entry("known-hull").or_insert(0) += 1; return; } }
+    }
     let id = sh.n;
     sh.n += 1;
 
-    let hf: Vec<String> = r.hull_faces.iter().map(|n| n.to_string()).collect();
     writeln!(sh.tsv, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{}\t{}\t{}\t{}\t{}\t{}",
         id, if good { "RAQT" } else { "-" }, r.gorder, r.genus, r.npieces, r.a_viol, r.q_missing, r.q_edges,
         if r.hull_regular { "regular" } else { "irregular" }, r.rin, r.rcirc, if r.rin < 1e9 { r.rin / r.rcirc } else { 0.0 },
@@ -818,6 +826,7 @@ fn main() {
     let mut use_join = true;
     let mut use_share = true;
     let mut partials = false;
+    let mut new_hulls: Option<String> = None;
     let mut combine_dir: Option<String> = None;
     let mut maxpairs = 2_000_000usize;
     let mut i = 1;
@@ -834,6 +843,7 @@ fn main() {
             "--no-join" => { use_join = false; }
             "--no-share" => { use_share = false; }
             "--partials" => { partials = true; }
+            "--new-hulls" => { new_hulls = Some(args[i + 1].clone()); i += 1; }
             "--combine" => { combine_dir = Some(args[i + 1].clone()); i += 1; }
             "--max-pairs" => { maxpairs = args[i + 1].parse().unwrap(); i += 1; }
             "--max-radius" => { maxrad = args[i + 1].parse().unwrap(); i += 1; }
@@ -914,8 +924,9 @@ fn main() {
     }
     let todo: Vec<usize> = (0..seeds.len()).filter(|i| !done[*i]).collect();
     let nfin = AtomicUsize::new(seeds.len() - todo.len());
+    let hulls: Option<HashSet<String>> = new_hulls.as_ref().map(|f| std::fs::read_to_string(f).unwrap_or_else(|e| panic!("--new-hulls {}: {}", f, e)).lines().map(|l| l.to_string()).collect());
     let part = if partials { Some(std::fs::OpenOptions::new().create(true).append(true).open(format!("{}/partials.tsv", outdir)).unwrap()) } else { None };
-    let shared = Mutex::new(Shared { seen, tsv, jsonl, ckpt, part, n: nres, reasons: Default::default() });
+    let shared = Mutex::new(Shared { seen, hulls, tsv, jsonl, ckpt, part, n: nres, reasons: Default::default() });
     say(format!("{}{}", if resuming { "resuming: " } else { "" }, config));
     say(format!("through links {:?}", tab.thru.iter().map(|v| v.len()).collect::<Vec<_>>()));
     if use_join { say(format!("join: directions {:?} rotation classes {:?} (through {:?}) merged directions {:?} (through {:?})", tab.ud.iter().map(|v| v.n).collect::<Vec<_>>(),

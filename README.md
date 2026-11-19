@@ -66,6 +66,7 @@ Directly:
 | `--resume` | continue from `checkpoint.txt` in the output directory if there is one; refuses if the settings differ | off |
 | `--no-join` | visit the last chain level link by link, as before the join (slower; same results, for checking) | off |
 | `--no-share` | test every hit on its own instead of sharing the chain-prefix screens between hits with the same group (slower; same results, for checking) | off |
+| `--new-hulls FILE` | record one toroid per convex hull, and none on a hull listed in FILE (lines of group, circumradius, inradius, hull face sizes, as `scripts/known_hulls.py` prints them from `runs/`); the rest are counted as `known-hull`. `mise run search` and the queue worker pass this by default, `mise run search ... --all-fillings` turns it off | off |
 | `--partials` | also write every collision-free hit, toroid or not, to `partials.tsv` (turns the hull screens off, so slower; large file) | off |
 | `--combine DIR` | no search: union pairs of chains from `DIR/partials.tsv` that share seed, group and centre, validate each, write `DIR/combined/` (`--max-pairs N` skips placements with more pairs, default 2,000,000) | |
 | `--out DIR` | output directory | `out` |

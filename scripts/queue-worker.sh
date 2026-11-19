@@ -61,7 +61,9 @@ while true; do
     depth="$1"; any="$2"; shift 2
     log "start $name ($job)"
     echo "$name" > queue/state/current
-    "${runner[@]}" target/release/webb-toroids --depth "$depth" --any "$any" "$@" --threads "$THREADS" --resume --out "runs/$name" >> queue/state/search.out 2>&1 &
+    # only toroids on a convex hull that no run has found yet are recorded (and so notified)
+    "$py" scripts/known_hulls.py runs > queue/state/hulls.txt 2>>queue/state/notify.log || : > queue/state/hulls.txt
+    "${runner[@]}" target/release/webb-toroids --depth "$depth" --any "$any" "$@" --new-hulls queue/state/hulls.txt --threads "$THREADS" --resume --out "runs/$name" >> queue/state/search.out 2>&1 &
     pid=$!
     while kill -0 "$pid" 2>/dev/null; do
       sleep "$POLL" & wait $! 2>/dev/null
