@@ -39,7 +39,7 @@ fn attach(lib: &[Solid], active: &[bool], parent: &(usize, Xf), out: &mut Vec<(u
 
 struct Out { hulls: HashSet<String>, seen: HashSet<String>, tsv: std::fs::File, jsonl: std::fs::File, n: usize, reasons: HashMap<&'static str, u64> }
 
-struct Cx<'a> { lib: &'a [Solid], active: &'a [bool], grp: &'a [Xf], centre: V3, gens: Vec<Xf>, nbase: usize, rin0: f64, maxrad: f64, depth: usize, out: &'a str, shared: &'a Mutex<Out>, first: &'a [(usize, Xf)] }
+struct Cx<'a> { outward: bool, lib: &'a [Solid], active: &'a [bool], grp: &'a [Xf], centre: V3, gens: Vec<Xf>, nbase: usize, rin0: f64, maxrad: f64, depth: usize, out: &'a str, shared: &'a Mutex<Out>, first: &'a [(usize, Xf)] }
 
 fn sig(r: &validate::Res, centre: V3) -> String {
     let (mut m1, mut m3) = (0.0, 0.0);
@@ -73,6 +73,8 @@ fn try_one(cx: &Cx, sc: &mut validate::Scratch, reasons: &mut HashMap<&'static s
     for (s2, x2) in &reps[..reps.len() - 1] {
         if *s2 == s && cx.grp.iter().any(|g| dist(g.ap(x2.t), x.t) < 1e-5) { *reasons.entry("duplicate").or_insert(0) += 1; return None; }
     }
+    // --outward: every added piece must reach the old hull
+    if cx.outward && dist(x.t, cx.centre) + lib[s].radius < cx.rin0 - 1e-6 { *reasons.entry("inside").or_insert(0) += 1; return None; }
     // nothing added reaches the old hull: the hull cannot have changed
     if last && reps[cx.nbase..].iter().all(|(s, x)| dist(x.t, cx.centre) + lib[*s].radius < cx.rin0 - 1e-6) { *reasons.entry("inside").or_insert(0) += 1; return None; }
     let r = match validate::validate(lib, reps, cx.centre, last, sc) {
@@ -121,7 +123,7 @@ fn grow(cx: &Cx, sc: &mut validate::Scratch, reasons: &mut HashMap<&'static str,
     }
 }
 
-pub fn decorate(lib: &[Solid], active: &[bool], file: &str, id: usize, depth: usize, maxpieces: usize, threads: usize, hulls: Option<HashSet<String>>, out: &str, maxrad: f64, beam: usize) {
+pub fn decorate(lib: &[Solid], active: &[bool], file: &str, id: usize, depth: usize, maxpieces: usize, threads: usize, hulls: Option<HashSet<String>>, out: &str, maxrad: f64, beam: usize, outward: bool) {
     let text = std::fs::read_to_string(file).expect("cannot read the results.jsonl to decorate");
     let line = text.lines().find(|l| l.starts_with(&format!("{{\"id\":{},", id))).expect("no result with that id");
     let after = |key: &str| -> &str { &line[line.find(key).unwrap() + key.len()..] };
@@ -174,7 +176,7 @@ pub fn decorate(lib: &[Solid], active: &[bool], file: &str, id: usize, depth: us
         });
     };
     {
-        let cx = Cx { lib, active, grp: &grp, centre, gens: gens.clone(), nbase: base.len(), rin0: r0.rin, maxrad, depth, out, shared: &shared, first: &[] };
+        let cx = Cx { outward, lib, active, grp: &grp, centre, gens: gens.clone(), nbase: base.len(), rin0: r0.rin, maxrad, depth, out, shared: &shared, first: &[] };
         run(&|i, sc, reasons| {
             let mut reps = base.clone();
             reps.push(c1[i]);
@@ -193,7 +195,7 @@ pub fn decorate(lib: &[Solid], active: &[bool], file: &str, id: usize, depth: us
         // pieces that are not edges of the toroid (0 would be quasi-convex, 1 if none was found);
         // the `beam` best distinct states of a level are each extended by one more decoration,
         // on a base piece or on a piece added before. A heuristic: the score is a lower bound.
-        let cx = Cx { lib, active, grp: &grp, centre, gens: gens.clone(), nbase: base.len(), rin0: r0.rin, maxrad, depth, out, shared: &shared, first: &first };
+        let cx = Cx { outward, lib, active, grp: &grp, centre, gens: gens.clone(), nbase: base.len(), rin0: r0.rin, maxrad, depth, out, shared: &shared, first: &first };
         let outward = |c: &(usize, Xf)| dist(c.1.t, centre) + lib[c.0].radius > r0.rin + 1e-6;
         let c1: Vec<(usize, Xf)> = c1.iter().filter(|c| outward(c)).cloned().collect();
         let mut states: Vec<Vec<(usize, Xf)>> = vec![base.clone()];
@@ -228,7 +230,7 @@ pub fn decorate(lib: &[Solid], active: &[bool], file: &str, id: usize, depth: us
             states = fv.into_iter().map(|f| f.3).collect();
         }
     } else if depth >= 2 {
-        let cx = Cx { lib, active, grp: &grp, centre, gens: gens.clone(), nbase: base.len(), rin0: r0.rin, maxrad, depth, out, shared: &shared, first: &first };
+        let cx = Cx { outward, lib, active, grp: &grp, centre, gens: gens.clone(), nbase: base.len(), rin0: r0.rin, maxrad, depth, out, shared: &shared, first: &first };
         let done = AtomicUsize::new(0);
         run(&|i, sc, reasons| {
             let mut reps = base.clone();

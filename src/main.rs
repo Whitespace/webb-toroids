@@ -840,6 +840,7 @@ fn main() {
     let (mut decorate_file, mut decorate_id): (Option<String>, usize) = (None, 0);
     let mut beam_dec = 0usize;
     let mut third = 0usize;
+    let mut outward = false;
     let mut range: Option<(usize, usize)> = None;
     let mut outdir = "out".to_string();
     let mut only: Option<Vec<String>> = None;
@@ -881,6 +882,7 @@ fn main() {
             "--id" => { decorate_id = args[i + 1].parse().unwrap(); i += 1; }
             "--dec-beam" => { beam_dec = args[i + 1].parse().unwrap(); i += 1; }
             "--third" => { third = args[i + 1].parse().unwrap(); i += 1; }
+            "--outward" => { outward = true; }
             "--max-pairs" => { maxpairs = args[i + 1].parse().unwrap(); i += 1; }
             "--max-radius" => { maxrad = args[i + 1].parse().unwrap(); i += 1; }
             "--max-faces" => { maxfaces = args[i + 1].parse().unwrap(); i += 1; }
@@ -898,7 +900,7 @@ fn main() {
         combine::combine(&lib, dir, maxpieces, threads, maxpairs, base_raqt, rounds, beam, hulls, third); return; }
     let active: Vec<bool> = lib.iter().map(|s| only.as_ref().map_or(true, |o| o.contains(&s.name)) && s.faces.len() <= maxfaces).collect();
     if let Some(f) = &decorate_file { let hulls: Option<HashSet<String>> = new_hulls.as_ref().map(|f| std::fs::read_to_string(f).unwrap().lines().map(|l| l.to_string()).collect());
-        decorate::decorate(&lib, &active, f, decorate_id, depth, maxpieces, threads, hulls, &outdir, maxrad, beam_dec); return; }
+        decorate::decorate(&lib, &active, f, decorate_id, depth, maxpieces, threads, hulls, &outdir, maxrad, beam_dec, outward); return; }
     // --links: which solids may be links. "struts" makes the free links prisms and antiprisms
     // (cube and octahedron included) passed base to base, i.e. the straight struts of a
     // node-and-strut frame. With --any K, up to K other pieces may sit in the chain as bends.
