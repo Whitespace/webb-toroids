@@ -22,3 +22,7 @@ run = "python scripts/check.py"
 description = "Rebuild viewer/index.html from viewer/picks.json"
 depends = ["pydeps"]
 run = "python viewer/build_viewer.py viewer/picks.json"
+
+[tasks.windows]
+description = "Window library search, e.g. mise run windows -- --min-n 12 --out windows/out (see windows/README.md)"
+run = "cargo run --release --bin windows --"

@@ -211,3 +211,9 @@ differently turned copies of it, and a few rejections per 10,000 move between `q
 - `runs/d3a1-struts-r6.2-p152`: straight struts with one bend piece. Complete, 148 results, 66 not in any other
   run, none with a new hull. `scripts/check.py` agrees on 147 and disputes 000038 (the same shape it disputes in `d2a2-c31`).
 - `runs/webb4`: Webb's four piece types only, used as the sanity test.
+
+## Window library
+
+`windows/` holds a library of hull windows (convex unit-edged polygons such as the 12-gons of
+Webb's toroid) with the solids that can frame them, built by `src/bin/windows.rs`. See
+`windows/README.md`.
