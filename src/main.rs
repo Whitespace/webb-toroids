@@ -882,7 +882,8 @@ fn main() {
         i += 1;
     }
     let lib = solids::load(&solids_path);
-    if let Some(dir) = &combine_dir { combine::combine(&lib, dir, maxpieces, threads, maxpairs, base_raqt, rounds, beam); return; }
+    if let Some(dir) = &combine_dir { let hulls: Option<HashSet<String>> = new_hulls.as_ref().map(|f| std::fs::read_to_string(f).unwrap().lines().map(|l| l.to_string()).collect());
+        combine::combine(&lib, dir, maxpieces, threads, maxpairs, base_raqt, rounds, beam, hulls); return; }
     let active: Vec<bool> = lib.iter().map(|s| only.as_ref().map_or(true, |o| o.contains(&s.name)) && s.faces.len() <= maxfaces).collect();
     // --links: which solids may be links. "struts" makes the free links prisms and antiprisms
     // (cube and octahedron included) passed base to base, i.e. the straight struts of a

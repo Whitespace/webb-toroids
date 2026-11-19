@@ -27,11 +27,11 @@ fn nums(s: &str) -> Vec<f64> { s.split(' ').filter(|x| !x.is_empty()).map(|x| x.
 
 fn pkey(s: usize, c: V3) -> (usize, [i64; 3]) { (s, [(c[0] * 1e4).round() as i64, (c[1] * 1e4).round() as i64, (c[2] * 1e4).round() as i64]) }
 
-struct Out { seen: HashSet<String>, tsv: std::fs::File, jsonl: std::fs::File, n: usize, reasons: HashMap<&'static str, u64> }
+struct Out { hulls: Option<HashSet<String>>, seen: HashSet<String>, tsv: std::fs::File, jsonl: std::fs::File, n: usize, reasons: HashMap<&'static str, u64> }
 
 /// `base_raqt`: only unions in which at least one chain is a toroid by itself (growing a known one).
 /// `rounds`, `beam`: how many chain orbits to add in turn, and how many unions survive each round.
-pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpairs: usize, base_raqt: bool, rounds: usize, beam: usize) {
+pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpairs: usize, base_raqt: bool, rounds: usize, beam: usize, hulls: Option<HashSet<String>>) {
     let text = std::fs::read_to_string(format!("{}/partials.tsv", dir)).expect("no partials.tsv in that run; search with --partials first");
     let mut buckets: HashMap<(usize, usize, i64, i64, i64), Vec<Part>> = HashMap::new();
     let mut lines: HashSet<&str> = HashSet::new();
@@ -57,7 +57,7 @@ pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpa
     let mut tsv = std::fs::File::create(format!("{}/results.tsv", out)).unwrap();
     writeln!(tsv, "id\tclass\tgroup\tgenus\tpieces\tA_viol\tQ_missing\tQ_edges\thull\trin\trcirc\troundness\thull_faces\tV\tE\tF\tcontent\tchain").unwrap();
     let jsonl = std::fs::File::create(format!("{}/results.jsonl", out)).unwrap();
-    let shared = Mutex::new(Out { seen: HashSet::new(), tsv, jsonl, n: 0, reasons: HashMap::new() });
+    let shared = Mutex::new(Out { hulls, seen: HashSet::new(), tsv, jsonl, n: 0, reasons: HashMap::new() });
     let next = AtomicUsize::new(0);
     let t0 = std::time::Instant::now();
     std::thread::scope(|sc| {
@@ -168,7 +168,7 @@ pub fn combine(lib: &[Solid], dir: &str, maxpieces: usize, threads: usize, maxpa
                         let mut reps = pa.reps.clone();
                         for (s, x) in &pc.reps[1..] { if !sets[a].contains(&pkey(*s, x.t)) { reps.push((*s, *x)); } }
                         let chain = format!("{} [{}] || {} [{}]", pa.desc, pa.cls, pc.desc, pc.cls);
-                        try_union(&reps, &chain, &mut reasons, &|_, _| true);
+                        try_union(&reps, &chain, &mut reasons, &|_, h| shared.lock().unwrap().hulls.as_mut().map_or(true, |k| k.insert(h.to_string())));
                     } }
                 }
                 let mut sh = shared.lock().unwrap();
