@@ -6,6 +6,19 @@ if [ "$(uname)" = Darwin ]; then
   if launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1; then echo "agent: loaded"; else echo "agent: not loaded (mise run queue:install)"; fi
 fi
 cur="$(cat queue/state/current 2>/dev/null || true)"
+epoch() { date -j -f '%Y-%m-%d %H:%M:%S' "$1" +%s 2>/dev/null || date -d "$1" +%s 2>/dev/null; }
+# Rough ETA of the running job from this session only: the worker log's last "start" line gives the
+# time, run.log's "(K already done)" the seeds it resumed with. Seeds differ a lot in cost, hence "~".
+eta() {
+  local name="$1" done="$2" total="$3" ts t0 k0 el s
+  ts="$(grep -F " start $name (" queue/state/worker.log 2>/dev/null | tail -n 1 | cut -c1-19)"
+  t0="$(epoch "$ts")" || return 0
+  k0="$(sed -n 's/.*seeds [0-9]* (\([0-9]*\) already done).*/\1/p' "runs/$name/run.log" 2>/dev/null | tail -n 1)"
+  el=$(($(date +%s) - t0))
+  if [ -z "$t0" ] || [ $((done - ${k0:-0})) -le 0 ] || [ "$el" -le 0 ]; then echo ", ETA unknown (no seed finished since $ts)"; return 0; fi
+  s=$(((total - done) * el / (done - ${k0:-0})))
+  printf ', ETA ~%dd%dh%dm%ds' $((s / 86400)) $((s % 86400 / 3600)) $((s % 3600 / 60)) $((s % 60))
+}
 while IFS= read -r line || [ -n "$line" ]; do
   line="${line%%#*}"
   [ -z "${line//[[:space:]]/}" ] && continue
@@ -17,7 +30,11 @@ while IFS= read -r line || [ -n "$line" ]; do
   else mark="queued "; fi
   extra=""
   if [ -f "runs/$name/checkpoint.txt" ]; then
-    extra="  seeds $(grep -c '^seed ' "runs/$name/checkpoint.txt")/$(sed -n '1s/.*nseeds=\([0-9]*\).*/\1/p' "runs/$name/checkpoint.txt")  results $(($(wc -l < "runs/$name/results.tsv") - 1))"
+    nd="$(grep -c '^seed ' "runs/$name/checkpoint.txt")"
+    nt="$(sed -n '1s/.*nseeds=\([0-9]*\).*/\1/p' "runs/$name/checkpoint.txt")"
+    extra="  $nd of $nt seeds complete"
+    [ "$mark" = RUNNING ] && extra="$extra$(eta "$name" "$nd" "$nt")"
+    extra="$extra  ($(($(wc -l < "runs/$name/results.tsv") - 1)) toroids found)"
   fi
   echo "$mark  $name$extra"
 done < queue/jobs.txt
