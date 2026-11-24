@@ -23,6 +23,10 @@ const RNAMES: [&str; 12] = ["overlap-centre", "overlap-chain", "overlap-sphere",
 static G_R: [AtomicU64; 12] = [const { AtomicU64::new(0) }; 12];
 static G_RNS: [AtomicU64; 12] = [const { AtomicU64::new(0) }; 12];
 static G_DONE: AtomicU64 = AtomicU64::new(0);
+/// SAMPLE_L1=K,R in the environment: from the seed, follow only the first links whose position
+/// in the link list is R modulo K. A benchmark aid: a heavy seed cut to a share of its tree, the
+/// same share whatever the build. K = 1 follows them all.
+static G_SAMPLE: [AtomicUsize; 2] = [AtomicUsize::new(1), AtomicUsize::new(0)];
 
 static LOG: Mutex<Option<std::fs::File>> = Mutex::new(None);
 /// Progress line to stderr and, once the output directory is open, to OUT/run.log.
@@ -1085,7 +1089,8 @@ fn dfs(ctx: &mut Ctx, w: &Xf, n: usize, depth: usize, any_left: usize, pieces: &
     if ctx.join && depth + 1 == ctx.maxdepth { join(ctx, w, n, (any_left != 0) as usize, pieces); return; }
     let tab = ctx.tab;
     let list = if any_left == 0 { &tab.thru[n] } else { &tab.links[n] };
-    for l in list {
+    for (li, l) in list.iter().enumerate() {
+        if depth == 0 && li % G_SAMPLE[0].load(Ordering::Relaxed) != G_SAMPLE[1].load(Ordering::Relaxed) { continue; }
         let xl = w.mul(&l.xp);
         if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; continue; }
         pieces.push((l.solid, xl));
@@ -1215,12 +1220,19 @@ fn main() {
     // Output directory and checkpoint. checkpoint.txt holds the run's settings, every result's
     // dedupe signature and every completed seed, so --resume can skip finished seeds and append.
     std::fs::create_dir_all(format!("{}/off", outdir)).unwrap();
+    // SAMPLE_L1=K,R (see G_SAMPLE). It goes into the settings line, so a sampled directory cannot
+    // be resumed as a full run; without it the line is what it always was.
+    let sample: Vec<usize> = std::env::var("SAMPLE_L1").ok().map_or(vec![1, 0], |v| v.split(',').map(|x| x.parse().unwrap()).collect());
+    assert!(sample.len() == 2 && sample[1] < sample[0], "SAMPLE_L1=K,R needs 0 <= R < K");
+    G_SAMPLE[0].store(sample[0], Ordering::Relaxed);
+    G_SAMPLE[1].store(sample[1], Ordering::Relaxed);
     let config = format!("config depth={} any={} min-group={} near={} only={} seeds={} range={:?} nseeds={}", depth, any, minorder, near,
         only.as_ref().map_or("all".to_string(), |v| v.join(",")), seeds_only.as_ref().map_or("all".to_string(), |v| v.join(",")), range, seeds.len())
         + &(if maxrad < f64::MAX { format!(" max-radius={}", maxrad) } else { String::new() })
         + &links_only.as_ref().map_or(String::new(), |l| format!(" links={}", l.join(",")))
         + &(if maxfaces < usize::MAX { format!(" max-faces={}", maxfaces) } else { String::new() })
-        + &(if maxpieces < usize::MAX { format!(" max-pieces={}", maxpieces) } else { String::new() });
+        + &(if maxpieces < usize::MAX { format!(" max-pieces={}", maxpieces) } else { String::new() })
+        + &(if sample[0] > 1 { format!(" sample-l1={},{}", sample[0], sample[1]) } else { String::new() });
     let ckpath = format!("{}/checkpoint.txt", outdir);
     let mut done = vec![false; seeds.len()];
     let mut seen: HashSet<String> = HashSet::new();
