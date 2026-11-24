@@ -1,6 +1,10 @@
 # Copy to queue/config.local (not tracked) and edit. These are the defaults.
 THREADS=2          # cores to use
-BACKGROUND=1       # 1: macOS background QoS (efficiency cores, quiet fans); 0: plain `nice`
+BACKGROUND=1       # 1: macOS background QoS: efficiency cores only, at a low clock (quiet, slow). An M4 Max has
+                   #    4 of them, so THREADS above 4 gains nothing in this mode.
+                   # 0: plain `nice` on the performance cores (fast; the fans will run). Try THREADS=10.
+                   # `mise run queue:speedtest` measures what the two modes do on this machine.
+                   # After a change: `mise run queue:reinstall` (the launchd agent is written to match).
 PULL=1             # git pull before each job
 PUSH=0             # 1: push finished runs to origin
 POLL=60            # seconds between checks for new results

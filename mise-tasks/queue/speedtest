@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#MISE description="Time one fixed search under the queue's two modes (background QoS, plain nice) and unrestricted: what BACKGROUND=1 costs on this machine"
+#MISE depends=["build"]
+# The same short search three times, 2 threads each: plainly, under `nice -n 19` (what the
+# worker does with BACKGROUND=0) and under `taskpolicy -b` (BACKGROUND=1). Prints the search's
+# own elapsed seconds for each. About half a minute per run on performance cores, several
+# times that in the background mode. Output goes to target/speedtest/<time>/ and is not needed
+# afterwards.
+set -euo pipefail
+args="--depth 3 --any 1 --links struts --max-radius 6.2 --max-pieces 152 --seed-range 0:60 --threads 2"
+dir="target/speedtest/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$dir"
+# one LABEL RUNNER...: run the search under RUNNER, print the seconds on its "done" line
+one() {
+  local label="$1"; shift
+  # shellcheck disable=SC2086
+  "$@" target/release/webb-toroids $args --out "$dir/$label" > "$dir/$label.log" 2>&1
+  sed -n 's/^done \([0-9.]*\)s.*/\1/p' "$dir/$label/run.log"
+}
+plain="$(one plain env)"
+echo "plain             ${plain}s"
+niced="$(one nice nice -n 19)"
+echo "nice -n 19        ${niced}s   (BACKGROUND=0)"
+# near 1.0 is the expected answer: nice lowers the priority, it does not choose the cores
+awk -v a="$niced" -v b="$plain" 'BEGIN { if (b > 0) printf "nice takes %.2f times as long as plain\n", a / b }'
+if command -v taskpolicy >/dev/null 2>&1; then
+  bg="$(one background taskpolicy -b)"
+  echo "taskpolicy -b     ${bg}s   (BACKGROUND=1)"
+  awk -v a="$bg" -v b="$niced" 'BEGIN { if (b > 0) printf "per thread, the background mode takes %.1f times as long as nice\n", a / b }'
+else
+  echo "taskpolicy not found (it is macOS only): no background mode to time here"
+fi

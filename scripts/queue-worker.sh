@@ -6,7 +6,9 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 THREADS=2          # cores to use
-BACKGROUND=1       # 1: macOS background QoS (efficiency cores, quiet fans) via taskpolicy; else nice
+BACKGROUND=1       # 1: macOS background QoS via taskpolicy: efficiency cores only, at a low clock (quiet, slow;
+                   #    more THREADS than efficiency cores gains nothing). 0: `nice`, on the performance cores
+                   #    (fast, fans run). `mise run queue:speedtest` measures the difference on this machine.
 PULL=1             # git pull before each job, so jobs pushed to the repo arrive by themselves
 PUSH=0             # 1: also push finished runs
 POLL=60            # seconds between checks for new results while a job runs

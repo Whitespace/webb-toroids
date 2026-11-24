@@ -111,6 +111,7 @@ Instead of running jobs by hand, a worker can chip away at a backlog on a couple
     mise run queue:reinstall         # uninstall then install: restart on the latest build
     mise run queue:push              # commit and push runs/ as it is now, the running job included
     mise run queue:run               # or run the worker in the foreground, any OS
+    mise run queue:speedtest         # what the background mode costs on this machine (see BACKGROUND)
 
 `queue/jobs.txt` is the backlog, one `mise run search` argument list per line, worked top to
 bottom. It is tracked in git and the worker pulls before each job, so jobs pushed to the repo
@@ -119,8 +120,19 @@ line; finished runs are committed locally. Everything is resumable: stopping the
 reboot or a crash loses at most the seeds in flight.
 
 Settings go in `queue/config.local` (see `queue/config.example`): `THREADS` (default 2),
-`BACKGROUND` (macOS background QoS through `taskpolicy -b`, which keeps the work on the
-efficiency cores), `PULL`, `PUSH` (push finished runs, off by default), `NOTIFY`.
+`BACKGROUND`, `PULL`, `PUSH` (push finished runs, off by default), `NOTIFY`. After a change,
+`mise run queue:reinstall`.
+
+`BACKGROUND=1` (the default) runs the search at macOS background QoS (`taskpolicy -b`, and a
+launchd agent of type Background). That is quiet, and slow: background work is kept on the
+efficiency cores, at a clock near idle, and is never moved to a performance core even when
+those are free. So in this mode more `THREADS` than the machine has efficiency cores (4 on an
+M4 Max) gain nothing. `BACKGROUND=0` runs it under plain `nice` instead (launchd agent of type
+Interactive, which means "no limits"): the performance cores are used and the fans will run.
+`mise run queue:speedtest` times one fixed search in both modes (a few minutes), so the choice
+can be made on numbers from the machine itself. It runs from the terminal, so it does not cover
+the launchd half; Activity Monitor's CPU History window shows which cores the installed worker
+is on.
 
 `mise run queue:notify-test` sends one notification with a thumbnail straight away and says which
 backend it used, so you can check the setup without waiting for a find.
