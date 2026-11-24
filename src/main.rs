@@ -15,6 +15,9 @@ static G_TESTS: AtomicU64 = AtomicU64::new(0);
 static G_HITS: AtomicU64 = AtomicU64::new(0);
 static G_QUICK: AtomicU64 = AtomicU64::new(0);
 static G_VAL_NS: AtomicU64 = AtomicU64::new(0);
+/// with WATCH: time in the scan half of `join` and in `join_apply` (which includes `validate`)
+static G_SCAN_NS: AtomicU64 = AtomicU64::new(0);
+static G_APPLY_NS: AtomicU64 = AtomicU64::new(0);
 const RNAMES: [&str; 12] = ["overlap-centre", "overlap-chain", "overlap-sphere", "overlap", "contact", "q-prescreen", "q-proxy", "nonmanifold", "pinch", "disconnected", "genus0", "other"];
 static G_R: [AtomicU64; 12] = [const { AtomicU64::new(0) }; 12];
 static G_RNS: [AtomicU64; 12] = [const { AtomicU64::new(0) }; 12];
@@ -66,9 +69,75 @@ fn cube_cell(x: V3, n: usize) -> usize {
     (f * n + q(x[(m + 1) % 3])) * n + q(x[(m + 2) % 3])
 }
 
-struct Tables { pt: [Vec<Points>; 2], pqk: Vec<(V3, usize)>, ud: Vec<UDirs>, rc: [Vec<Vec<RotClass>>; 2], axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool> }
+/// Compound links for the suffix join, one level per number j >= 1 of through links. Row i of
+/// `rows[n]` is j + 1 numbers: a link X of `links[n]` that is not a through link, then T1..Tj,
+/// each an index into `thru` of the polygon the link before it leaves through. `rc[n]` and
+/// `pt[n]` are for these rows what `Tables::rc` and `Tables::pt` are for single links, built on
+/// the composite exit transforms X.exit * T1.exit * .. * Tj.exit, with the row number where a
+/// single-link class has a link number. So one join answers "X, then j through links, then an
+/// end piece" for every X at once.
+struct Compound { rows: Vec<Vec<u32>>, rc: Vec<Vec<RotClass>>, pt: Vec<Points> }
+impl Compound {
+    /// bytes the level's tables hold
+    fn bytes(&self) -> usize {
+        let rows: usize = self.rows.iter().map(|v| v.capacity() * 4).sum();
+        let rc: usize = self.rc.iter().flatten().map(|c| 128 + c.links.capacity() * 4 + c.t.capacity() * 24).sum();
+        let pt: usize = self.pt.iter().map(|p| p.w.iter().map(|v| v.capacity() * 8).sum::<usize>() + p.start.capacity() * 4 + p.mem.capacity() * 8
+            + p.grid.as_ref().map_or(0, |g| g.c.iter().map(|v| v.capacity() * 8).sum::<usize>() + g.start.capacity() * 4 + g.p.capacity() * 12)).sum();
+        rows + rc + pt
+    }
+}
+/// Bytes charged against --table-mem while `points` builds one table, per merged direction and
+/// per (class, direction) pair: the table itself (40 and 8) plus what the build holds at its
+/// worst moment (the key map while it grows, the sort buffers).
+const PT_DIR: usize = 164;
+const PT_PAIR: usize = 32;
 
-fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -> Tables {
+/// The compound rows behind an n-gon one through link longer than `prev` (rows of `j` numbers;
+/// for j = 1 the non-through links of `list` themselves), and their rotation classes, keyed as
+/// for single links. Returns the bytes they hold. None once those bytes, plus what the direction
+/// pairs of the classes will cost in `points`, pass `lim`.
+fn compound(list: &[Link], thru: &[Vec<Link>], ud: &[UDirs], prev: &[u32], j: usize, lim: usize) -> Option<(Vec<u32>, Vec<RotClass>, usize)> {
+    // composite exit transform and exit polygon of a row
+    let walk = |row: &[u32]| -> (Xf, usize) {
+        let l = &list[row[0] as usize];
+        let (mut x, mut hn) = (l.exit, l.hn);
+        for &t in &row[1..] { let l = &thru[hn][t as usize]; x = x.mul(&l.exit); hn = l.hn; }
+        (x, hn)
+    };
+    let nrows: usize = prev.chunks_exact(j).map(|row| thru[walk(row).1].len()).sum();
+    // per row: its numbers, and a row number and a translation in its class (vectors that grow by doubling)
+    let rowb = 4 * (j + 1) + 2 * (4 + 24);
+    if nrows > u32::MAX as usize || nrows.saturating_mul(rowb) > lim { return None; }
+    let mut rows: Vec<u32> = Vec::with_capacity(nrows * (j + 1));
+    let mut keys: std::collections::HashMap<[i64; 10], usize> = Default::default();
+    let mut out: Vec<RotClass> = Vec::new();
+    let (mut held, mut pairs) = (nrows * rowb, 0usize);
+    for row in prev.chunks_exact(j) {
+        let (x0, h0) = walk(row);
+        for (ti, t) in thru[h0].iter().enumerate() {
+            let i = rows.len() / (j + 1);
+            rows.extend_from_slice(row);
+            rows.push(ti as u32);
+            let x = x0.mul(&t.exit);
+            let mut k = [t.hn as i64; 10];
+            for a in 0..3 { for b in 0..3 { k[a * 3 + b] = (x.r[a][b] * 1e8).round() as i64; } }
+            let c = *keys.entry(k).or_insert_with(|| { out.push(RotClass { r: x.r, hn: t.hn, links: Vec::new(), t: Vec::new() }); out.len() - 1 });
+            if out[c].links.is_empty() { held += 400; pairs += ud[t.hn].n; }
+            out[c].links.push(i as u32);
+            out[c].t.push(x.t);
+        }
+        if held.saturating_add(pairs.saturating_mul(PT_PAIR)) > lim { return None; }
+    }
+    Some((rows, out, held))
+}
+
+struct Tables { pt: [Vec<Points>; 2], pqk: Vec<(V3, usize)>, ud: Vec<UDirs>, rc: [Vec<Vec<RotClass>>; 2], axw: Vec<[Vec<f64>; 3]>, sc: [(f64, f64); 6], ax: Vec<Vec<AxEntry>>, links: Vec<Vec<Link>>, thru: Vec<Vec<Link>>, cosset: Vec<f64>, pq: Vec<(usize, usize, f64, Vec<(usize, usize)>)>, cosbin: Vec<bool>,
+    /// `at[j - 1]`: the compound tables with j through links; `atlog`: what was built, for the log
+    at: Vec<Compound>, atlog: Vec<String> }
+
+/// `atlev`: how many levels of compound tables the job can use; `atmem`: the bytes they may take.
+fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool, atlev: usize, atmem: usize) -> Tables {
     let mut ax: Vec<Vec<AxEntry>> = (0..11).map(|_| Vec::new()).collect();
     let mut links: Vec<Vec<Link>> = (0..11).map(|_| Vec::new()).collect();
     for (si, s) in lib.iter().enumerate() {
@@ -174,11 +243,15 @@ fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -
         out
     }).collect() };
     let rc = [classes(&thru), classes(&links)];
+    // the compound tables are built under a budget: `points` stops, and says so in `ptover`, once
+    // the table it is working on would take more than `ptlim` bytes
+    let (ptlim, ptover) = (std::cell::Cell::new(usize::MAX), std::cell::Cell::new(false));
     let points = |cls: &Vec<Vec<RotClass>>| -> Vec<Points> { cls.iter().map(|v| {
         let mut keys: std::collections::HashMap<[i64; 3], u32> = Default::default();
         let mut dirs: Vec<V3> = Vec::new();
         let mut pairs: Vec<(u32, u32, u32)> = Vec::new();
         for (ci, c) in v.iter().enumerate() {
+            if dirs.len().saturating_mul(PT_DIR).saturating_add(pairs.len().saturating_mul(PT_PAIR)) > ptlim.get() { ptover.set(true); return Points::default(); }
             let u = &ud[c.hn];
             for d in 0..u.n {
                 let x = mv(&c.r, [u.w[0][d], u.w[1][d], u.w[2][d]]);
@@ -233,6 +306,44 @@ fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -
         Points { w: [col(0), col(1), col(2)], n: dirs.len(), start, mem: pairs.iter().map(|p| (p.1, p.2)).collect(), grid }
     }).collect() };
     let pt = [points(&rc[0]), points(&rc[1])];
+    // Compound tables for the suffix join, level by level for as long as they fit the budget. A
+    // level is kept only if all of it fits; the search falls back to the link loop where a node
+    // would need a level that is missing.
+    let mut at: Vec<Compound> = Vec::new();
+    let mut atlog: Vec<String> = Vec::new();
+    let mut used = 0usize;
+    for j in 1..=atlev {
+        let t0 = std::time::Instant::now();
+        let mut lvl = Compound { rows: Vec::new(), rc: Vec::new(), pt: Vec::new() };
+        for n in 0..links.len() {
+            let first: Vec<u32>;
+            let prev: &[u32] = if j == 1 { first = (0..links[n].len() as u32).filter(|&i| !links[n][i as usize].through).collect(); &first } else { &at[j - 2].rows[n] };
+            let (rows, cls, held) = match compound(&links[n], &thru, &ud, prev, j, atmem.saturating_sub(used)) { Some(x) => x, None => break };
+            used += held;
+            lvl.rows.push(rows);
+            lvl.rc.push(cls);
+        }
+        if lvl.rc.len() == links.len() {
+            for n in 0..links.len() {
+                // one polygon at a time, so the limit can follow what is already built
+                ptlim.set(atmem.saturating_sub(used));
+                let one = vec![std::mem::take(&mut lvl.rc[n])];
+                let p = points(&one).pop().unwrap();
+                lvl.rc[n] = one.into_iter().next().unwrap();
+                if ptover.get() { break; }
+                used += p.n * 40 + p.mem.len() * 8;
+                lvl.pt.push(p);
+            }
+            ptlim.set(usize::MAX);
+        }
+        if lvl.pt.len() < links.len() {
+            atlog.push(format!("join: suffix level {} and up not built: over --table-mem {:.2} GB ({:.2} GB in use by lower levels); nodes that need them loop over the links instead", j, atmem as f64 / 1e9, at.iter().map(|c| c.bytes()).sum::<usize>() as f64 / 1e9));
+            break;
+        }
+        atlog.push(format!("join: suffix level {} rows {:?} rotation classes {:?} merged directions {:?} {:.2} GB built in {:.1}s", j, lvl.rows.iter().map(|v| v.len() / (j + 1)).collect::<Vec<_>>(),
+            lvl.rc.iter().map(|v| v.len()).collect::<Vec<_>>(), lvl.pt.iter().map(|v| v.n).collect::<Vec<_>>(), lvl.bytes() as f64 / 1e9, t0.elapsed().as_secs_f64()));
+        at.push(lvl);
+    }
     let tau = 2.0 * std::f64::consts::PI;
     let pqk: Vec<(V3, usize)> = pq.iter().map(|(p, q, c, rec)| {
         let gens = [Xf::about(o0, [0.0, 0.0, 1.0], tau / *p as f64), Xf::about(o0, [(1.0 - c * c).sqrt(), 0.0, *c], tau / *q as f64)];
@@ -253,7 +364,7 @@ fn build_tables(lib: &[Solid], active: &[bool], linkok: &[bool], struts: bool) -
         if spread > 1e-6 && (tau / m as f64 - spread) > 1e-6 { return ([0.0; 3], 0); }
         (sel[0], m)
     }).collect();
-    Tables { pt, pqk, ud, rc, axw, sc, ax, links, thru, cosset, pq, cosbin }
+    Tables { pt, pqk, ud, rc, axw, sc, ax, links, thru, cosset, pq, cosbin, at, atlog }
 }
 
 struct Shared {
@@ -334,21 +445,27 @@ struct Ctx<'a> {
     ey: V3,
     pre_ov: u64,
     pre_q: u64,
-    /// the last link of the chain while `join_apply` is working on it: (solid, face in, turn, face out)
-    pend: Option<(usize, usize, usize, usize)>,
+    /// the last links of the chain while `join_apply` is working on them (one, or the links of a
+    /// compound row): (solid, face in, turn, face out)
+    pend: Vec<(usize, usize, usize, usize)>,
     cand: Vec<(u32, u32)>,
+    /// below a node with one arbitrary link left, join compound links instead of looping over that link
+    suffix: bool,
+    watch: bool,
 }
 
 /// Per-thread counters, pushed to the shared atomics now and then so the hot path never
 /// touches a cache line another thread writes.
 #[derive(Default)]
-struct Stats { calls: u64, tests: u64, hits: u64, quick: u64, quick_total: u64, val_ns: u64, r: [u64; 12], rns: [u64; 12] }
+struct Stats { calls: u64, tests: u64, hits: u64, quick: u64, quick_total: u64, val_ns: u64, r: [u64; 12], rns: [u64; 12], scan_ns: u64, apply_ns: u64 }
 impl Stats {
     fn flush(&mut self) {
         G_TESTS.fetch_add(self.tests, Ordering::Relaxed);
         G_HITS.fetch_add(self.hits, Ordering::Relaxed);
         G_QUICK.fetch_add(self.quick, Ordering::Relaxed);
         G_VAL_NS.fetch_add(self.val_ns, Ordering::Relaxed);
+        G_SCAN_NS.fetch_add(self.scan_ns, Ordering::Relaxed);
+        G_APPLY_NS.fetch_add(self.apply_ns, Ordering::Relaxed);
         for k in 0..12 { if self.r[k] > 0 { G_R[k].fetch_add(self.r[k], Ordering::Relaxed); G_RNS[k].fetch_add(self.rns[k], Ordering::Relaxed); } }
         self.quick_total += self.quick;
         *self = Stats { calls: self.calls, quick_total: self.quick_total, ..Default::default() };
@@ -610,7 +727,7 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                     let cls = match &res { Ok(r) => if r.a_viol == 0 && r.q_ok { "raqt" } else { "valid" }, Err(e) if ["face3", "nonmanifold", "pinch", "disconnected", "euler", "genus0"].contains(e) => *e, _ => "" };
                     if !cls.is_empty() {
                         let mut d = ctx.desc.join(" > ");
-                        if let Some((ls, lg, lk, lh)) = ctx.pend { d.push_str(&format!(" > {}[f{} k{} > f{}]", ctx.lib[ls].name, lg, lk, lh)); }
+                        for &(ls, lg, lk, lh) in &ctx.pend { d.push_str(&format!(" > {}[f{} k{} > f{}]", ctx.lib[ls].name, lg, lk, lh)); }
                         d.push_str(&format!(" > {}[f{} k{} ax{}]", ctx.lib[e.solid].name, e.face, e.k, e.order));
                         let rj: Vec<String> = pieces.iter().map(|(s, x)| format!("{} {}", s, combine::xf_txt(x))).collect();
                         let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{:.17e} {:.17e} {:.17e}\t{} {}\t{}\t{}", ctx.a, ctx.ai, k[0], k[1], k[2], cls, centre[0], centre[1], centre[2],
@@ -619,12 +736,12 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                     }
                 }
                 if res.is_ok() {
-                    if let Some((ls, lg, lk, lh)) = ctx.pend { ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[ls].name, lg, lk, lh)); }
+                    for &(ls, lg, lk, lh) in &ctx.pend { ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[ls].name, lg, lk, lh)); }
                     ctx.desc.push(format!("{}[f{} k{} ax{}]", ctx.lib[e.solid].name, e.face, e.k, e.order));
                     let reps: Vec<(usize, Xf)> = pieces.clone();
                     record(ctx, &reps, &gens, centre, res);
                     ctx.desc.pop();
-                    if ctx.pend.is_some() { ctx.desc.pop(); }
+                    for _ in 0..ctx.pend.len() { ctx.desc.pop(); }
                 } else if let Err(r) = res { *ctx.reasons.entry(r).or_insert(0) += 1; }
             }
         }
@@ -673,31 +790,42 @@ fn prune(ctx: &Ctx, sl: usize, cl: V3, pieces: &[(usize, Xf)]) -> bool {
 }
 
 /// Second half of `join`: the surviving (link, end piece) pairs, link by link, through the exact tests.
+/// `kind` names the table as in `join`. The links of a compound row are placed and pruned one
+/// after the other with the same arithmetic as `dfs`, each against the chain so far, so `entry`
+/// gets the very frames it would get from `dfs`; the composite transform is for the scan only.
 #[cfg_attr(feature = "prof", inline(never))]
-fn join_apply(ctx: &mut Ctx, w: &Xf, list: &[Link], cand: &[(u32, u32)], pieces: &mut Vec<(usize, Xf)>) {
+fn join_apply(ctx: &mut Ctx, w: &Xf, n: usize, kind: usize, cand: &[(u32, u32)], pieces: &mut Vec<(usize, Xf)>) {
     let tab = ctx.tab;
+    let np = pieces.len();
     let mut i = 0;
     while i < cand.len() {
         let li = cand[i].0;
         let mut j = i;
         while j < cand.len() && cand[j].0 == li { j += 1; }
-        let l = &list[li as usize];
-        let xl = w.mul(&l.xp);
-        if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; i = j; continue; }
-        pieces.push((l.solid, xl));
-        // the link's part of the chain description is only written out if a result needs it
-        ctx.pend = Some((l.solid, l.g, l.k, l.h));
-        let w2 = w.mul(&l.exit);
-        let wi2 = w2.inv();
-        let (o2, u2) = (wi2.t, mv(&wi2.r, ctx.u));
-        for k in i..j {
-            let ei = cand[k].1 as usize;
-            let cs = dot(u2, tab.ax[l.hn][ei].w);
-            if !tab.cosbin[(cs.abs() * 4096.0) as usize] { continue; }
-            entry(ctx, &w2, o2, u2, l.hn, ei, cs, pieces);
+        let row: &[u32] = if kind < 2 { std::slice::from_ref(&cand[i].0) } else { &tab.at[kind - 2].rows[n][li as usize * kind..(li as usize + 1) * kind] };
+        let (mut w2, mut hn, mut dead) = (*w, n, false);
+        for (c, &x) in row.iter().enumerate() {
+            let l = if c > 0 || kind == 0 { &tab.thru[hn][x as usize] } else { &tab.links[n][x as usize] };
+            let xl = w2.mul(&l.xp);
+            if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; dead = true; break; }
+            pieces.push((l.solid, xl));
+            // the links' part of the chain description is only written out if a result needs it
+            ctx.pend.push((l.solid, l.g, l.k, l.h));
+            w2 = w2.mul(&l.exit);
+            hn = l.hn;
         }
-        ctx.pend = None;
-        pieces.pop();
+        if !dead {
+            let wi2 = w2.inv();
+            let (o2, u2) = (wi2.t, mv(&wi2.r, ctx.u));
+            for k in i..j {
+                let ei = cand[k].1 as usize;
+                let cs = dot(u2, tab.ax[hn][ei].w);
+                if !tab.cosbin[(cs.abs() * 4096.0) as usize] { continue; }
+                entry(ctx, &w2, o2, u2, hn, ei, cs, pieces);
+            }
+        }
+        ctx.pend.clear();
+        pieces.truncate(np);
         i = j;
     }
 }
@@ -707,11 +835,15 @@ fn join_apply(ctx: &mut Ctx, w: &Xf, list: &[Link], cand: &[(u32, u32)], pieces:
 /// share an exit rotation see the seed axis in the same direction, so the direction table of the
 /// exit polygon is scanned once per rotation class; only the few pairs whose axes make an
 /// allowed angle and are coplanar (loose tolerances here, the exact ones in `entry`) go further.
+///
+/// `kind` picks the table: 0 the through links, 1 all links, 1 + j the compound links with j
+/// through links (`Compound`). The scan is the same for all of them; a compound row stands where
+/// a link does, with its composite exit transform.
 #[cfg_attr(feature = "prof", inline(never))]
-fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
+fn join(ctx: &mut Ctx, w: &Xf, n: usize, kind: usize, pieces: &mut Vec<(usize, Xf)>) {
     let tab = ctx.tab;
-    let kind = if any_left == 0 { 0 } else { 1 };
-    let (list, classes, pt) = (if kind == 0 { &tab.thru[n] } else { &tab.links[n] }, &tab.rc[kind][n], &tab.pt[kind][n]);
+    let (classes, pt) = if kind < 2 { (&tab.rc[kind][n], &tab.pt[kind][n]) } else { (&tab.at[kind - 2].rc[n], &tab.at[kind - 2].pt[n]) };
+    let t0 = ctx.watch.then(std::time::Instant::now);
     let wi = w.inv();
     let o = wi.t;
     let u = mv(&wi.r, ctx.u);
@@ -802,7 +934,9 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
     ctx.st.calls += 1;
     if ctx.st.calls & 0xff == 0 { ctx.st.flush(); }
     cand.sort_unstable();
-    join_apply(ctx, w, list, &cand, pieces);
+    let t1 = ctx.watch.then(std::time::Instant::now);
+    join_apply(ctx, w, n, kind, &cand, pieces);
+    if let (Some(a), Some(b)) = (t0, t1) { ctx.st.scan_ns += (b - a).as_nanos() as u64; ctx.st.apply_ns += b.elapsed().as_nanos() as u64; }
     ctx.bins = bins;
     ctx.cand = cand;
     ctx.scos = scos;
@@ -810,10 +944,46 @@ fn join(ctx: &mut Ctx, w: &Xf, n: usize, any_left: usize, pieces: &mut Vec<(usiz
     ctx.srex = srex;
 }
 
+/// Everything below a node that may still use exactly one arbitrary link, with `r` more links
+/// of depth, without looping over that link. What is left below such a node is
+///     (through)^i, then at most one arbitrary link X, then (through)^j, then the end piece,
+/// and by the first link it splits into: nothing (`test`); one link of any kind (the single-link
+/// join); X followed by j >= 1 through links (the join on compound level j); a through link
+/// followed by at least one more link (visit that child, whose own "nothing" case was a pair of
+/// the single-link join here: `covered`). Each such chain comes out exactly once, and a chain
+/// with a link `prune` rejects comes out nowhere, as in `dfs`.
+fn visit(ctx: &mut Ctx, w: &Xf, n: usize, r: usize, covered: bool, pieces: &mut Vec<(usize, Xf)>) {
+    if covered {
+        // only the per-node reset `test` would have done
+        if !ctx.gce.is_empty() { ctx.gc.clear(); ctx.gce.clear(); ctx.gcg.clear(); ctx.gcent.clear(); ctx.gcstab.clear(); }
+        ctx.gc_np = pieces.len();
+    } else { test(ctx, w, n, pieces); }
+    if r == 0 { return; }
+    let tab = ctx.tab;
+    let full = r - 1 > tab.at.len();
+    if !full {
+        join(ctx, w, n, 1, pieces);
+        for j in 1..r { join(ctx, w, n, 1 + j, pieces); }
+        if r == 1 { return; }
+    }
+    // A compound level this node needs was not built (--table-mem): then loop over all the links
+    // as `dfs` does. Below a through link there is still one arbitrary link to spend; below any
+    // other only through links are left.
+    for l in if full { &tab.links[n] } else { &tab.thru[n] } {
+        let xl = w.mul(&l.xp);
+        if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; continue; }
+        pieces.push((l.solid, xl));
+        ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[l.solid].name, l.g, l.k, l.h));
+        if l.through { visit(ctx, &w.mul(&l.exit), l.hn, r - 1, !full, pieces); } else { dfs(ctx, &w.mul(&l.exit), l.hn, ctx.maxdepth + 1 - r, 0, pieces); }
+        ctx.desc.pop();
+        pieces.pop();
+    }
+}
+
 fn dfs(ctx: &mut Ctx, w: &Xf, n: usize, depth: usize, any_left: usize, pieces: &mut Vec<(usize, Xf)>) {
     test(ctx, w, n, pieces);
     if depth >= ctx.maxdepth { return; }
-    if ctx.join && depth + 1 == ctx.maxdepth { join(ctx, w, n, any_left, pieces); return; }
+    if ctx.join && depth + 1 == ctx.maxdepth { join(ctx, w, n, (any_left != 0) as usize, pieces); return; }
     let tab = ctx.tab;
     let list = if any_left == 0 { &tab.thru[n] } else { &tab.links[n] };
     for l in list {
@@ -821,7 +991,10 @@ fn dfs(ctx: &mut Ctx, w: &Xf, n: usize, depth: usize, any_left: usize, pieces: &
         if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; continue; }
         pieces.push((l.solid, xl));
         ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[l.solid].name, l.g, l.k, l.h));
-        dfs(ctx, &w.mul(&l.exit), l.hn, depth + 1, if l.through { any_left } else { any_left - 1 }, pieces);
+        let left = if l.through { any_left } else { any_left - 1 };
+        // one arbitrary link left below this child: the suffix join takes over
+        if ctx.suffix && left == 1 { visit(ctx, &w.mul(&l.exit), l.hn, ctx.maxdepth - depth - 1, false, pieces); }
+        else { dfs(ctx, &w.mul(&l.exit), l.hn, depth + 1, left, pieces); }
         ctx.desc.pop();
         pieces.pop();
     }
@@ -848,6 +1021,8 @@ fn main() {
     let mut seeds_only: Option<Vec<String>> = None;
     let mut links_only: Option<Vec<String>> = None;
     let mut use_join = true;
+    let mut use_suffix = true;
+    let mut table_mem = 4.0f64;
     let mut use_share = true;
     let mut partials = false;
     let mut new_hulls: Option<String> = None;
@@ -871,6 +1046,8 @@ fn main() {
             "--seed-range" => { let v: Vec<usize> = args[i + 1].split(':').map(|x| x.parse().unwrap()).collect(); range = Some((v[0], v[1])); i += 1; }
             "--resume" => { resume = true; }
             "--no-join" => { use_join = false; }
+            "--no-suffix-join" => { use_suffix = false; }
+            "--table-mem" => { table_mem = args[i + 1].parse().unwrap(); i += 1; }
             "--no-share" => { use_share = false; }
             "--partials" => { partials = true; }
             "--partial-keys" => { partial_keys = Some(args[i + 1].clone()); i += 1; }
@@ -912,7 +1089,11 @@ fn main() {
         Some(_) if struts => true,
         Some(l) => l.contains(&s.name),
     }).collect();
-    let tab = build_tables(&lib, &active, &linkok, struts);
+    // The suffix join needs compound tables with up to depth - any through links: a node with one
+    // arbitrary link left is at least any - 1 links down the chain.
+    let use_suffix = use_suffix && use_join && any >= 1;
+    let atlev = if use_suffix && !list_seeds { depth.saturating_sub(any) } else { 0 };
+    let tab = build_tables(&lib, &active, &linkok, struts, atlev, (table_mem.max(0.0) * 1e9) as usize);
     // seeds: (solid, axis, face rep under the axis stabiliser)
     let mut seeds: Vec<(usize, usize, usize)> = Vec::new();
     for (si, s) in lib.iter().enumerate() {
@@ -981,6 +1162,7 @@ fn main() {
     if use_join { say(format!("join: directions {:?} rotation classes {:?} (through {:?}) merged directions {:?} (through {:?})", tab.ud.iter().map(|v| v.n).collect::<Vec<_>>(),
         tab.rc[1].iter().map(|v| v.len()).collect::<Vec<_>>(), tab.rc[0].iter().map(|v| v.len()).collect::<Vec<_>>(),
         tab.pt[1].iter().map(|v| v.n).collect::<Vec<_>>(), tab.pt[0].iter().map(|v| v.n).collect::<Vec<_>>())); }
+    for l in &tab.atlog { say(l.clone()); }
     say(format!("solids {} seeds {} ({} already done) threads {} axtab {:?} links {:?}", lib.len(), seeds.len(), seeds.len() - todo.len(), threads,
         tab.ax.iter().map(|v| v.len()).collect::<Vec<_>>(), tab.links.iter().map(|v| v.len()).collect::<Vec<_>>()));
     let next = AtomicUsize::new(0);
@@ -991,8 +1173,8 @@ fn main() {
             sc.spawn(|| while G_DONE.load(Ordering::Relaxed) == 0 {
                 // sleep in short steps so the process exits promptly when the work is done
                 for _ in 0..40 { if G_DONE.load(Ordering::Relaxed) != 0 { return; } std::thread::sleep(std::time::Duration::from_millis(250)); }
-                say(format!("watch {:.0}s seeds {}/{} tests {} hits {} quick {} validate_cpu_s {:.1}", t0.elapsed().as_secs_f64(), nfin.load(Ordering::Relaxed), seeds.len(), G_TESTS.load(Ordering::Relaxed),
-                    G_HITS.load(Ordering::Relaxed), G_QUICK.load(Ordering::Relaxed), G_VAL_NS.load(Ordering::Relaxed) as f64 / 1e9));
+                say(format!("watch {:.0}s seeds {}/{} tests {} hits {} quick {} validate_cpu_s {:.1} join_scan_cpu_s {:.1} join_apply_cpu_s {:.1}", t0.elapsed().as_secs_f64(), nfin.load(Ordering::Relaxed), seeds.len(), G_TESTS.load(Ordering::Relaxed),
+                    G_HITS.load(Ordering::Relaxed), G_QUICK.load(Ordering::Relaxed), G_VAL_NS.load(Ordering::Relaxed) as f64 / 1e9, G_SCAN_NS.load(Ordering::Relaxed) as f64 / 1e9, G_APPLY_NS.load(Ordering::Relaxed) as f64 / 1e9));
                 let parts: Vec<String> = (0..12).filter(|k| G_R[*k].load(Ordering::Relaxed) > 0).map(|k| format!("{} n={} cpu={:.1}s", RNAMES[k], G_R[k].load(Ordering::Relaxed), G_RNS[k].load(Ordering::Relaxed) as f64 / 1e9)).collect();
                 say(format!("  {}", parts.join(" | ")));
             });
@@ -1013,7 +1195,7 @@ fn main() {
                 let mut ctx = Ctx { lib: &lib, ai, screen: (near == 0 || frames) && !partials, partials, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
                     pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, st: Default::default(),
-                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), sdil: Vec::new(), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), sqm: Vec::new(), srex: Vec::new(), seed_ov: 0, cand: Vec::new() };
+                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), sdil: Vec::new(), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: Vec::new(), bins: Vec::new(), scos: Vec::new(), sqm: Vec::new(), srex: Vec::new(), seed_ov: 0, cand: Vec::new(), suffix: use_suffix, watch: std::env::var("WATCH").is_ok() };
                 for x in &tab.pq {
                     if !ctx.pdiv.contains(&x.0) || x.3.len() < minorder { continue; }
                     let b = ((x.2 + 1.0) * 4096.0) as usize;
@@ -1039,7 +1221,9 @@ fn main() {
                 let w = s.frames[f][0];
                 // if even the closest allowed centre is beyond the radius limit, every hit of this seed
                 // would be a seed-overlap or out of range: nothing to search
-                if ctx.srex.iter().all(|r| r - 2e-6 > maxrad) { ctx.reasons.insert("seed-dead", 1); } else { dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces); }
+                if ctx.srex.iter().all(|r| r - 2e-6 > maxrad) { ctx.reasons.insert("seed-dead", 1); }
+                else if ctx.suffix && any == 1 { visit(&mut ctx, &w, s.faces[f].len(), depth, false, &mut pieces); }
+                else { dfs(&mut ctx, &w, s.faces[f].len(), 0, any, &mut pieces); }
                 ctx.st.flush();
                 if ctx.seed_ov > 0 { *ctx.reasons.entry("seed-overlap").or_insert(0) += ctx.seed_ov; }
                 if ctx.pre_ov > 0 { *ctx.reasons.entry("prefix-overlap").or_insert(0) += ctx.pre_ov; }
