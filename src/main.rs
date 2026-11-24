@@ -841,6 +841,7 @@ fn main() {
     let mut beam_dec = 0usize;
     let mut third = 0usize;
     let mut outward = false;
+    let mut list_seeds = false;
     let mut range: Option<(usize, usize)> = None;
     let mut outdir = "out".to_string();
     let mut only: Option<Vec<String>> = None;
@@ -883,6 +884,7 @@ fn main() {
             "--dec-beam" => { beam_dec = args[i + 1].parse().unwrap(); i += 1; }
             "--third" => { third = args[i + 1].parse().unwrap(); i += 1; }
             "--outward" => { outward = true; }
+            "--list-seeds" => { list_seeds = true; }
             "--max-pairs" => { maxpairs = args[i + 1].parse().unwrap(); i += 1; }
             "--max-radius" => { maxrad = args[i + 1].parse().unwrap(); i += 1; }
             "--max-faces" => { maxfaces = args[i + 1].parse().unwrap(); i += 1; }
@@ -923,6 +925,11 @@ fn main() {
                 if stab.iter().all(|&k| s.fperm[k][f] >= f) { seeds.push((si, ai, f)); }
             }
         }
+    }
+    if list_seeds {
+        // the seed list as --seed-range counts it: index, solid, order of the axis, exit face, its size
+        for (i, &(si, ai, f)) in seeds.iter().enumerate() { println!("{}\t{}\t{}\t{}\t{}", i, lib[si].name, lib[si].axes[ai].1, f, lib[si].faces[f].len()); }
+        return;
     }
     if let Some((a, b)) = range { seeds = seeds[a.min(seeds.len())..b.min(seeds.len())].to_vec(); }
     // Output directory and checkpoint. checkpoint.txt holds the run's settings, every result's
