@@ -15,7 +15,8 @@ static G_TESTS: AtomicU64 = AtomicU64::new(0);
 static G_HITS: AtomicU64 = AtomicU64::new(0);
 static G_QUICK: AtomicU64 = AtomicU64::new(0);
 static G_VAL_NS: AtomicU64 = AtomicU64::new(0);
-/// with WATCH: time in the scan half of `join` and in `join_apply` (which includes `validate`)
+/// with WATCH: time in `scan`, and in the exact tests on what the scans found (`join_apply`,
+/// `replay`; this includes `validate`)
 static G_SCAN_NS: AtomicU64 = AtomicU64::new(0);
 static G_APPLY_NS: AtomicU64 = AtomicU64::new(0);
 const RNAMES: [&str; 12] = ["overlap-centre", "overlap-chain", "overlap-sphere", "overlap", "contact", "q-prescreen", "q-proxy", "nonmanifold", "pinch", "disconnected", "genus0", "other"];
@@ -449,8 +450,9 @@ struct Ctx<'a> {
     ey: V3,
     pre_ov: u64,
     pre_q: u64,
-    /// the last link of the chain while `join_apply` is working on it: (solid, face in, turn, face out)
-    pend: Option<(usize, usize, usize, usize)>,
+    /// the last links of the chain while `join_apply` or `replay` is working on them, not yet in
+    /// `desc`: (solid, face in, turn, face out)
+    pend: Vec<(usize, usize, usize, usize)>,
     cand: Vec<(u32, u32)>,
     /// below a node with one arbitrary link left, join compound links instead of looping over that link
     suffix: bool,
@@ -732,7 +734,7 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                     let cls = match &res { Ok(r) => if r.a_viol == 0 && r.q_ok { "raqt" } else { "valid" }, Err(e) if ["face3", "nonmanifold", "pinch", "disconnected", "euler", "genus0"].contains(e) => *e, _ => "" };
                     if !cls.is_empty() {
                         let mut d = ctx.desc.join(" > ");
-                        if let Some((ls, lg, lk, lh)) = ctx.pend { d.push_str(&format!(" > {}[f{} k{} > f{}]", ctx.lib[ls].name, lg, lk, lh)); }
+                        for &(ls, lg, lk, lh) in &ctx.pend { d.push_str(&format!(" > {}[f{} k{} > f{}]", ctx.lib[ls].name, lg, lk, lh)); }
                         d.push_str(&format!(" > {}[f{} k{} ax{}]", ctx.lib[e.solid].name, e.face, e.k, e.order));
                         let rj: Vec<String> = pieces.iter().map(|(s, x)| format!("{} {}", s, combine::xf_txt(x))).collect();
                         let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{:.17e} {:.17e} {:.17e}\t{} {}\t{}\t{}", ctx.a, ctx.ai, k[0], k[1], k[2], cls, centre[0], centre[1], centre[2],
@@ -741,12 +743,12 @@ fn entry(ctx: &mut Ctx, w: &Xf, o: V3, u: V3, n: usize, i: usize, cs: f64, piece
                     }
                 }
                 if res.is_ok() {
-                    if let Some((ls, lg, lk, lh)) = ctx.pend { ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[ls].name, lg, lk, lh)); }
+                    for &(ls, lg, lk, lh) in &ctx.pend { ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[ls].name, lg, lk, lh)); }
                     ctx.desc.push(format!("{}[f{} k{} ax{}]", ctx.lib[e.solid].name, e.face, e.k, e.order));
                     let reps: Vec<(usize, Xf)> = pieces.clone();
                     record(ctx, &reps, &gens, centre, res);
                     ctx.desc.pop();
-                    if ctx.pend.is_some() { ctx.desc.pop(); }
+                    for _ in 0..ctx.pend.len() { ctx.desc.pop(); }
                 } else if let Err(r) = res { *ctx.reasons.entry(r).or_insert(0) += 1; }
             }
         }
@@ -808,7 +810,7 @@ fn join_apply(ctx: &mut Ctx, w: &Xf, list: &[Link], cand: &[(u32, u32)], pieces:
         if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; i = j; continue; }
         pieces.push((l.solid, xl));
         // the link's part of the chain description is only written out if a result needs it
-        ctx.pend = Some((l.solid, l.g, l.k, l.h));
+        ctx.pend.push((l.solid, l.g, l.k, l.h));
         let w2 = w.mul(&l.exit);
         let wi2 = w2.inv();
         let (o2, u2) = (wi2.t, mv(&wi2.r, ctx.u));
@@ -818,7 +820,7 @@ fn join_apply(ctx: &mut Ctx, w: &Xf, list: &[Link], cand: &[(u32, u32)], pieces:
             if !tab.cosbin[(cs.abs() * 4096.0) as usize] { continue; }
             entry(ctx, &w2, o2, u2, l.hn, ei, cs, pieces);
         }
-        ctx.pend = None;
+        ctx.pend.pop();
         pieces.pop();
         i = j;
     }
@@ -1015,9 +1017,10 @@ fn visit(ctx: &mut Ctx, w: &Xf, n: usize, r: usize, pieces: &mut Vec<(usize, Xf)
         let xl = w.mul(&l.xp);
         if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; } else {
             pieces.push((l.solid, xl));
-            ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[l.solid].name, l.g, l.k, l.h));
+            // X and the links below it are only described if a result needs it (`pend`)
+            ctx.pend.push((l.solid, l.g, l.k, l.h));
             replay(ctx, &w.mul(&l.exit), n, l.hn, 0, r - 1, &cs, lo, hi, pieces);
-            ctx.desc.pop();
+            ctx.pend.pop();
             pieces.pop();
         }
         lo = hi;
@@ -1032,7 +1035,7 @@ fn visit(ctx: &mut Ctx, w: &Xf, n: usize, r: usize, pieces: &mut Vec<(usize, Xf)
 /// level that begin with the links so far (`n0` is the polygon their rows are filed under).
 /// `dfs` does three things at such a node, and so does this: `test` (a fresh group cache, then
 /// the end pieces directly on the node: level m); at the last level the join over the through
-/// links, the link pending as in `join_apply` (level m + 1); otherwise one child per through link.
+/// links, which shares that cache (level m + 1); otherwise one child per through link.
 fn replay(ctx: &mut Ctx, w: &Xf, n0: usize, hn: usize, m: usize, rho: usize, cs: &[Vec<(u32, u32)>], lo: [usize; MAXLV], hi: [usize; MAXLV], pieces: &mut Vec<(usize, Xf)>) {
     let tab = ctx.tab;
     if !ctx.gce.is_empty() { ctx.gc.clear(); ctx.gce.clear(); ctx.gcg.clear(); ctx.gcent.clear(); ctx.gcstab.clear(); }
@@ -1059,9 +1062,9 @@ fn replay(ctx: &mut Ctx, w: &Xf, n0: usize, hn: usize, m: usize, rho: usize, cs:
         let xl = w.mul(&l.xp);
         if prune(ctx, l.solid, xl.t, pieces) { ctx.pruned += 1; lo = h2; continue; }
         pieces.push((l.solid, xl));
+        ctx.pend.push((l.solid, l.g, l.k, l.h));
         let w2 = w.mul(&l.exit);
         if rho == 1 {
-            ctx.pend = Some((l.solid, l.g, l.k, l.h));
             let wi2 = w2.inv();
             let (o2, u2) = (wi2.t, mv(&wi2.r, ctx.u));
             for &(_, ei) in &cs[m + 1][lo[m + 1]..h2[m + 1]] {
@@ -1069,12 +1072,8 @@ fn replay(ctx: &mut Ctx, w: &Xf, n0: usize, hn: usize, m: usize, rho: usize, cs:
                 if !tab.cosbin[(c.abs() * 4096.0) as usize] { continue; }
                 entry(ctx, &w2, o2, u2, l.hn, ei as usize, c, pieces);
             }
-            ctx.pend = None;
-        } else {
-            ctx.desc.push(format!("{}[f{} k{} > f{}]", ctx.lib[l.solid].name, l.g, l.k, l.h));
-            replay(ctx, &w2, n0, l.hn, m + 1, rho - 1, cs, lo, h2, pieces);
-            ctx.desc.pop();
-        }
+        } else { replay(ctx, &w2, n0, l.hn, m + 1, rho - 1, cs, lo, h2, pieces); }
+        ctx.pend.pop();
         pieces.pop();
         lo = h2;
     }
@@ -1295,7 +1294,7 @@ fn main() {
                 let mut ctx = Ctx { lib: &lib, ai, screen: (near == 0 || frames) && !partials, partials, tab: &tab, a: si, u: s.axes[ai].0, maxdepth: depth, ordered: seeds_only.is_none(), minorder, near, shared: &shared, outdir: &outdir, tests: 0, hits: 0,
                     desc: vec![format!("{}[ax{} f{}]", s.name, s.axes[ai].1, f)], reasons: Default::default(), scratch: Default::default(),
                     pdiv: divisors(s.axes[ai].1).into_iter().filter(|x| *x >= 3).collect(), inside, st: Default::default(),
-                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), sdil: Vec::new(), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: None, bins: Vec::new(), scos: Vec::new(), sqm: Vec::new(), srex: Vec::new(), seed_ov: 0, cand: Vec::new(), suffix: use_suffix, pool: Vec::new(), watch: std::env::var("WATCH").is_ok() };
+                    axrot: Vec::new(), maxrad, pruned: 0, join: use_join, sbin: Box::new([false; 65536]), ssym: Box::new([false; 65536]), sdil: Vec::new(), share: use_share, check: std::env::var("SHARE_CHECK").is_ok(), gc: Default::default(), gce: Vec::new(), gcg: Vec::new(), gcent: Vec::new(), gcstab: Vec::new(), gc_np: 1, ex: [0.0; 3], ey: [0.0; 3], pre_ov: 0, pre_q: 0, pend: Vec::new(), bins: Vec::new(), scos: Vec::new(), sqm: Vec::new(), srex: Vec::new(), seed_ov: 0, cand: Vec::new(), suffix: use_suffix, pool: Vec::new(), watch: std::env::var("WATCH").is_ok() };
                 for x in &tab.pq {
                     if !ctx.pdiv.contains(&x.0) || x.3.len() < minorder { continue; }
                     let b = ((x.2 + 1.0) * 4096.0) as usize;
