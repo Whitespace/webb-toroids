@@ -65,6 +65,8 @@ Directly:
 | `--threads T` | worker threads | all CPUs |
 | `--resume` | continue from `checkpoint.txt` in the output directory if there is one; refuses if the settings differ | off |
 | `--no-join` | visit the last chain level link by link, as before the join (slower; same results, for checking) | off |
+| `--no-suffix-join` | below a chain node with one arbitrary link left, loop over that link as before the suffix join (much slower with `--any 2`; same results, for checking) | off |
+| `--table-mem G` | most memory, in GB, for the compound tables of the suffix join; a level that does not fit is not built and the search loops over the links at the nodes that would have used it | 4 |
 | `--no-share` | test every hit on its own instead of sharing the chain-prefix screens between hits with the same group (slower; same results, for checking) | off |
 | `--new-hulls FILE` | record one toroid per convex hull, and none on a hull listed in FILE (lines of group, circumradius, inradius, hull face sizes, as `scripts/known_hulls.py` prints them from `runs/`); the rest are counted as `known-hull`. `mise run search` and the queue worker pass this by default, `mise run search ... --all-fillings` turns it off | off |
 | `--partials` | also write every collision-free hit, toroid or not, to `partials.tsv` (turns the hull screens off, so slower; large file) | off |
@@ -84,7 +86,7 @@ group generators), `off/NNNNNN.off` with a `.pieces` file naming the solid behin
 seeds and result signatures). Without `--resume` an existing output directory is overwritten.
 A seed interrupted part-way is redone on resume; its results are not duplicated. After a resume
 the reject counts on the `done` line cover the last session only. `WATCH=1` prints live counters
-every 10 s.
+every 10 s, among them the time spent in the join's scans and in the exact tests on what they find.
 
 Check a result independently (scipy convex hull):
 
@@ -187,6 +189,30 @@ The vector pass then runs over the cell centres against the allowed angle bins w
 cell size, and only cells that can hold a match are opened, on a compact single-precision copy.
 Seeds that are all scan (many have no hit at all on all-solid runs) take a third to a quarter of
 the time. `NO_GRID=1` gives the full pass for comparison; results and reject counts are the same.
+
+With `--any 2` nearly all of the tree used to be two arbitrary links in a row: at a node with one
+arbitrary link left the search looped over every link X (34,000 behind a triangle on all solids)
+only to find, almost always, nothing below it. That loop is gone (the suffix join). What can still
+follow such a node is some through links, at most one arbitrary link X, more through links, and
+the end piece. Through links are few (two per polygon with `--links struts`) and are still
+walked. For X the join above is run on compound links: a table of every (X, T1, .., Tj), X
+arbitrary and the T through links, with the composite exit transform of the whole run, built
+exactly like the single-link tables, one table level per j. One scan per level at the node gives
+every (compound link, end piece) pair that can be a hit. Those are then sorted by X and put
+through the exact tests where the loop would have met them: X by X in list order, each link
+placed and pruned as before, the per-node cache reset at the same chain nodes. The hits are
+therefore the same, in the same order, with the same outcome; `results.tsv`, `results.jsonl`
+and the reject counts do not change, except `pruned-subtrees` and `seed-overlap` (links without
+candidates are never looked at, and a scan drops some seed overlaps before they are counted).
+`--no-suffix-join` runs the loop for comparison.
+
+Level j of the compound tables is about 2^j times the size of the single-link tables with
+`--links struts`, and far larger without (every pair of opposite parallel faces is a through
+link then). A job uses levels 1 to `--depth` minus `--any`. They are built at start-up, lowest
+first, for as long as everything fits in `--table-mem`; the log says what was built. At a node
+that needs a level that is missing the search loops over the links as before, which costs little
+when it only happens near the root. On all 127 solids level 1 (all that `--depth 3 --any 2`
+needs) holds 9.4 million directions in 0.63 GB and takes 9 s to build.
 
 A seed's nearest copy sits on the neighbouring axis of the same order, so below a closed-form
 distance from the centre their inscribed spheres overlap whatever the chain does. Those centres
